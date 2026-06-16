@@ -1,0 +1,318 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Security and architecture · File13</title>
+  <meta name="description" content="How File13 handles IMAP connections, credentials, AI requests, and destructive actions. The architecture page for users who want to verify the privacy claim." />
+  <link rel="icon" href="assets/logo/favicon.svg" />
+  <link rel="stylesheet" href="colors_and_type.css" />
+  <link rel="stylesheet" href="site.css" />
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js" defer></script>
+</head>
+<body>
+<div class="page">
+
+  <header class="topbar">
+    <div class="topbar-inner">
+      <a class="brand" href="index.html"><span class="brand-mark">F</span><span>File13</span></a>
+      <nav class="nav">
+        <a href="index.html#features">Features</a>
+        <a href="privacy.html">Privacy</a>
+        <a href="cli.html">CLI</a>
+        <a href="ai.html">AI</a>
+        <a href="support.html">Support</a>
+        <span class="sep"></span>
+        <a class="btn btn-primary btn-sm" href="index.html#download">Download</a>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <div class="wrap">
+      <div class="page-header">
+        <span class="eyebrow">Trust</span>
+        <h1>Security and architecture</h1>
+        <p class="lede">
+          A technical companion to the privacy policy. This page describes
+          how File13 is built, what it talks to, and where the safety
+          rails are. File13 is provided as is by one developer; see §14
+          for what that means for security reports.
+        </p>
+        <div class="meta"><span>Updated 2026-05-13</span><span>·</span><span>Application version 1.0</span></div>
+      </div>
+
+      <div class="legal-layout">
+        <aside>
+          <div class="toc">
+            <h4>Contents</h4>
+            <ol>
+              <li><a href="#shape">Shape of the system</a></li>
+              <li><a href="#imap">IMAP behavior</a></li>
+              <li><a href="#credentials">Credential storage</a></li>
+              <li><a href="#oauth">OAuth status</a></li>
+              <li><a href="#cache">Local cache</a></li>
+              <li><a href="#icloud">iCloud sync paths</a></li>
+              <li><a href="#ai">AI request boundary</a></li>
+              <li><a href="#destructive">Destructive-action safety</a></li>
+              <li><a href="#automation">Automation safeguards</a></li>
+              <li><a href="#network">Network egress</a></li>
+              <li><a href="#logging">Logging</a></li>
+              <li><a href="#sandbox">Sandbox and entitlements</a></li>
+              <li><a href="#cli">CLI signing</a></li>
+              <li><a href="#disclosure">Responsible disclosure</a></li>
+            </ol>
+          </div>
+        </aside>
+
+        <article class="prose">
+
+          <h2 id="shape">1. Shape of the system</h2>
+          <p>
+            File13 is a native SwiftUI application with three runtime
+            surfaces: the macOS app, the iOS app, and a bundled command-line
+            tool. There are no File13-operated servers in the picture.
+            The application makes outbound connections only to:
+          </p>
+          <ul>
+            <li>your IMAP mail servers, over TLS, using credentials you supply;</li>
+            <li>Apple system services (Foundation Models, iCloud Keychain, iCloud KV-Store, StoreKit) when you opt in;</li>
+            <li>a third-party AI provider's API, if and only if you configure one and supply a key.</li>
+          </ul>
+          <p>
+            There is no inbound listener. There is no analytics endpoint. There
+            is no crash-reporter operated by File13 — crashes are routed
+            through Apple's system reporter, which you control.
+          </p>
+
+          <h2 id="imap">2. IMAP behavior</h2>
+          <p>
+            File13 speaks IMAP4rev1 (RFC 3501) over TLS, with selective use
+            of the IDLE, MOVE, CONDSTORE, and LIST-EXTENDED extensions where
+            the server advertises them. The client is built on a vendored
+            SwiftMail implementation. The relevant guarantees:
+          </p>
+          <ul>
+            <li>Only <code>FETCH</code> requests for <code>ENVELOPE</code>, <code>FLAGS</code>, <code>BODYSTRUCTURE</code>, <code>RFC822.SIZE</code>, <code>UID</code>, and the named header set (<code>List-Unsubscribe</code>, <code>List-Id</code>, <code>Message-ID</code>) are issued.</li>
+            <li><strong>No <code>BODY[]</code>, no <code>BODY[1]</code>, no <code>RFC822</code> fetch is ever issued.</strong> The client has no code path that would.</li>
+            <li>External URLs found in headers are not dereferenced. Tracking pixels and remote images do not load — File13 never has the body that would reference them.</li>
+            <li>Reconnection backs off on transient errors and respects the server's stated rate limits.</li>
+            <li>UID validity is re-checked on every reconnect; if the server's <code>UIDVALIDITY</code> changes, the local cache for that mailbox is invalidated.</li>
+          </ul>
+
+          <h2 id="credentials">3. Credential storage</h2>
+          <p>
+            IMAP passwords, app-specific passwords, and AI provider API keys
+            are stored in the system Keychain. Every keychain call site is
+            routed through a single internal store (<code>KeychainStore</code>)
+            so that the iCloud-sync flag is applied uniformly across items.
+          </p>
+          <p>
+            By default, items use
+            <code>kSecAttrAccessibleWhenUnlockedThisDeviceOnly</code> and do
+            not leave the device. Enabling “Sync passwords with iCloud
+            Keychain” in Settings → General triggers a one-time migration:
+            existing items are deleted and re-added with
+            <code>kSecAttrAccessibleWhenUnlocked</code>, because
+            <code>kSecAttrSynchronizable</code> is part of an item's primary
+            key and cannot be flipped via <code>SecItemUpdate</code>. Reads
+            and deletes always use <code>kSecAttrSynchronizableAny</code> so
+            stale items in either mode are handled cleanly.
+          </p>
+
+          <h2 id="oauth">4. OAuth — scaffolding, no providers wired</h2>
+          <p>
+            The codebase contains XOAUTH2 routing, an OAuth2 client, token
+            refresh, and an iCloud-Keychain token migrator, but no provider
+            is currently enabled. The reasons are practical:
+          </p>
+          <ul>
+            <li>Gmail's <code>mail.google.com/</code> scope requires an annual CASA security audit.</li>
+            <li>Microsoft's Publisher Verification requires a paid work/school tenant; basic-auth IMAP for personal outlook.com / hotmail.com / live.com was retired in September 2024.</li>
+            <li>iCloud Mail has no IMAP OAuth at all and requires app-specific passwords.</li>
+            <li>Yahoo / AOL's third-party OAuth program is effectively closed.</li>
+          </ul>
+          <p>
+            Every account today authenticates with a password or
+            app-specific password. The OAuth scaffolding is kept so the
+            switch can be flipped when a provider becomes viable for direct
+            distribution.
+          </p>
+
+          <h2 id="cache">5. Local cache</h2>
+          <p>
+            Cached headers are persisted with SwiftData inside the
+            application's sandboxed container. The store is configured with
+            <code>ModelConfiguration(url:)</code> — the local-only form.
+            <code>ModelConfiguration(... cloudKitDatabase:)</code> is not
+            used. Cached headers therefore do not sync via CloudKit and are
+            not accessible to any other app.
+          </p>
+          <p>
+            The cache holds the same fields described in §3 of the
+            <a href="privacy.html#processed">privacy policy</a> and nothing
+            else. Bodies are not present because they are never fetched.
+          </p>
+
+          <h2 id="icloud">6. iCloud sync paths</h2>
+          <p>
+            File13 uses Apple's iCloud Key-Value Store (<code>NSUbiquitousKeyValueStore</code>)
+            to sync a narrow allowlist of preferences across your devices,
+            <em>only when you turn it on</em>. The allowlist is enforced in
+            code in a single module. Anything not on the allowlist will not
+            sync, regardless of where it is stored.
+          </p>
+          <p>On the allowlist:</p>
+          <ul>
+            <li>Accounts list — addresses, hosts, ports, display names, <strong>without passwords</strong>.</li>
+            <li>Rules, AI preferences (no API keys), sender categories, VIPs, suggestion dismissals, replied-message IDs, UI preferences.</li>
+          </ul>
+          <p>Explicitly off the allowlist:</p>
+          <ul>
+            <li>Cached message headers (<code>MessageCache</code>).</li>
+            <li>IMAP UID validity, fetch progress.</li>
+            <li>All Keychain items, including passwords and API keys.</li>
+          </ul>
+          <p>
+            iCloud Keychain sync is a separate, per-device preference covered
+            in §3.
+          </p>
+
+          <h2 id="ai">7. AI request boundary</h2>
+          <p>
+            For Apple Foundation Models — the default — requests are
+            dispatched through Apple's framework, which routes either to the
+            on-device model or to Private Cloud Compute. No data crosses
+            Apple's privacy boundary.
+          </p>
+          <p>
+            For an external provider you configure (Anthropic, OpenAI,
+            Google, Perplexity), the request goes from your device directly
+            to the provider's API over TLS, authenticated with the key you
+            entered. The payload is constructed from the metadata fields
+            described in <a href="privacy.html#processed">§3 of the privacy
+            policy</a>. The provider's privacy policy governs what they do
+            with the request. File13 does not log, mirror, or sample these
+            requests.
+          </p>
+
+          <h2 id="destructive">8. Destructive-action safety</h2>
+          <p>
+            Bulk delete, archive, and move are <strong>optimistic and buffered</strong>.
+            When you confirm an action, File13 mutates the local headers
+            view immediately and schedules a task to commit the change to the
+            server after a configurable undo window (default 5 seconds,
+            adjustable in Settings). Before that window expires, the
+            <kbd>⌘Z</kbd> undo rolls back from a snapshot stored on the
+            pending action.
+          </p>
+          <ul>
+            <li>Both VIP protection and transactional-mail protection are evaluated <em>inside</em> the rules engine, not inside the matcher. Manual selections are not filtered — you are explicit.</li>
+            <li>Both protections are settings-toggle gated and visible in the bulk-action confirmation.</li>
+            <li>Suggestion dismissal is fingerprint-based, so the same suggestion does not reappear after you have rejected it.</li>
+          </ul>
+
+          <h2 id="automation">9. Automation safeguards</h2>
+          <p>
+            Rules and CLI commands operate on the same buffered pipeline.
+            Every destructive CLI verb supports <code>--dry-run</code> and
+            prints the affected message count before the buffer is committed.
+            Rule conditions are header-only; rules cannot read bodies because
+            no caller in the system has bodies to give them.
+          </p>
+
+          <h2 id="network">10. Network egress</h2>
+          <p>The application's outbound destinations are:</p>
+          <ul>
+            <li>Your IMAP servers (port 993, TLS, or 143 with STARTTLS where you require it).</li>
+            <li><code>generativelanguage.googleapis.com</code>, <code>api.anthropic.com</code>, <code>api.openai.com</code>, <code>api.perplexity.ai</code> — only if you have configured the corresponding provider.</li>
+            <li>Apple endpoints used by the system frameworks (StoreKit, iCloud).</li>
+          </ul>
+          <p>
+            No content is sent to any domain operated by File13, because
+            File13 operates none.
+          </p>
+
+          <h2 id="logging">11. Logging</h2>
+          <p>
+            The application uses Apple's unified logging system (<code>os_log</code>).
+            Logs are at the <code>info</code> level or below and contain
+            structure (IMAP command names, durations, error codes) but
+            <strong>not envelope content</strong>. Logs stay on your device
+            and are visible to you in Console.app. File13 does not ship
+            logs anywhere.
+          </p>
+
+          <h2 id="sandbox">12. Sandbox and entitlements</h2>
+          <p>
+            The macOS application runs under the App Sandbox. Its
+            entitlements are limited to outbound network access
+            (<code>com.apple.security.network.client</code>), an iCloud
+            KV-Store identifier, an application group used to share license
+            state with the CLI, and a keychain access group used to share
+            credentials with the CLI. The application has no entitlement to
+            read the user's files outside its container, no microphone, no
+            camera, no contacts, no location.
+          </p>
+
+          <h2 id="cli">13. CLI signing and entitlements</h2>
+          <p>
+            The <code>file13</code> binary ships inside
+            <code>File13.app/Contents/Resources/file13</code>. It is
+            built from a separate Swift package by a Run-Script build phase
+            and re-signed with the application's identity for notarization.
+            The CLI's entitlements file deliberately differs from the GUI's:
+          </p>
+          <ul>
+            <li>No <code>app-sandbox</code> entitlement — the CLI runs from your shell.</li>
+            <li>No <code>network.client</code> entitlement — unsandboxed processes have network access by default.</li>
+            <li>No <code>ubiquity-kvstore-identifier</code> — the CLI does not touch the iCloud KV-Store.</li>
+            <li><strong>Same</strong> <code>application-groups</code> and <code>keychain-access-groups</code> as the GUI — so accounts and credentials are shared between the two surfaces without an additional setup step.</li>
+          </ul>
+
+          <h2 id="disclosure">14. Security reports</h2>
+          <p>
+            File13 does not operate a coordinated-disclosure program.
+            There is no security inbox, no bug-bounty arrangement, no PGP
+            key, no acknowledgement SLA, and no committed remediation
+            timeline. The app is built and maintained by one person
+            and provided as is, with no warranty
+            (see the <a href="license.html">License</a>).
+          </p>
+          <p>
+            If you find what looks like a security issue, you are
+            welcome — but not required — to send a note to
+            <a href="mailto:dev@snxt.ai">dev@snxt.ai</a>. Please
+            understand that:
+          </p>
+          <ul>
+            <li>I read messages when I can; I make no commitment to reply or to act on a particular schedule.</li>
+            <li>I cannot promise that a reported issue will be fixed, mitigated, or acknowledged in any release.</li>
+            <li>I do not coordinate embargoes, assign CVEs, or run a vulnerability rewards program. Treat any disclosure timing as your own decision.</li>
+            <li>I do not accept reports that require signing an NDA, an indemnity, or any other agreement as a precondition to reading them.</li>
+          </ul>
+          <p>
+            If you intend to publish a finding, do so on whatever timeline
+            seems right to you. File13 is small, open about its
+            architecture (this page exists for a reason), and you can
+            inspect what it does without my permission.
+          </p>
+
+        </article>
+      </div>
+    </div>
+  </main>
+
+  <footer class="site">
+    <div class="wrap">
+      <div class="col"><a class="brand" href="index.html" style="margin-bottom:14px"><span class="brand-mark">F</span><span>File13</span></a><p style="color:var(--fg-3); font-size:var(--fs-13); max-width:36ch; margin:0">An inbox triage instrument. Metadata only, local processing, one-time purchase.</p></div>
+      <div class="col"><h4>Product</h4><ul><li><a href="index.html#features">Features</a></li><li><a href="cli.html">Command line</a></li><li><a href="ai.html">AI processing</a></li><li><a href="support.html">Support</a></li></ul></div>
+      <div class="col"><h4>Trust</h4><ul><li><a href="privacy.html">Privacy policy</a></li><li><a href="security.html">Security</a></li><li><a href="opensource.html">Acknowledgments</a></li></ul></div>
+      <div class="col"><h4>Legal</h4><ul><li><a href="license.html">License (MIT)</a></li><li><a href="mailto:dev@snxt.ai">dev@snxt.ai</a></li></ul></div>
+      <div class="legal" style="grid-column: 1 / -1"><span>© 2026 Shawn M. Brown.</span><span>Mac App Store and the Apple logo are trademarks of Apple Inc.</span></div>
+    </div>
+  </footer>
+
+</div>
+</body>
+</html>

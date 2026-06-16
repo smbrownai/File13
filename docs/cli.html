@@ -1,0 +1,251 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Command line · File13</title>
+  <meta name="description" content="The file13 command-line tool. Bundled with the app, signed with the same identity, scriptable for power users." />
+  <link rel="icon" href="assets/logo/favicon.svg" />
+  <link rel="stylesheet" href="colors_and_type.css" />
+  <link rel="stylesheet" href="site.css" />
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js" defer></script>
+</head>
+<body>
+<div class="page">
+
+  <header class="topbar">
+    <div class="topbar-inner">
+      <a class="brand" href="index.html"><span class="brand-mark">F</span><span>File13</span></a>
+      <nav class="nav">
+        <a href="index.html#features">Features</a>
+        <a href="privacy.html">Privacy</a>
+        <a href="cli.html" class="current">CLI</a>
+        <a href="ai.html">AI</a>
+        <a href="support.html">Support</a>
+        <span class="sep"></span>
+        <a class="btn btn-primary btn-sm" href="index.html#download">Download</a>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <div class="wrap">
+      <div class="page-header">
+        <span class="eyebrow">Command line · Pro</span>
+        <h1>file13(1)</h1>
+        <p class="lede">
+          The same triage engine, scripted. <code>file13</code> ships
+          inside the application bundle and shares your accounts, rules, and
+          credentials with the GUI. Built for power users, cron jobs, and
+          repeatable cleanups.
+        </p>
+        <div class="meta"><span>Version 1.0</span><span>·</span><span>macOS only</span><span>·</span><span>Requires File13 Pro</span></div>
+      </div>
+
+      <article class="prose" style="max-width:72ch">
+
+        <div class="callout">
+          <div class="label">File13 Pro</div>
+          <p>
+            The command-line tool requires File13 Pro. The binary ships
+            in every install, but every subcommand except <code>version</code>
+            and <code>doctor</code> exits with code 4 until a Pro
+            entitlement is detected. See <a href="index.html#download">pricing</a>.
+          </p>
+        </div>
+
+        <h2 id="install">Install</h2>
+        <p>
+          The binary lives at
+          <code>File13.app/Contents/Resources/file13</code>. The fastest
+          way to add it to your shell is from inside the app: <strong>Edit →
+          Install File13 CLI…</strong>. The sheet shows the resolved path
+          and a <code>ln -s</code> command you can paste into Terminal.
+        </p>
+        <div class="callout">
+          <div class="label">Why a manual link?</div>
+          <p>
+            The Mac App Store sandbox prevents File13 from writing into
+            <code>/usr/local/bin</code> on your behalf. Terminal handles that
+            part of the install, the same way VS Code installs its
+            <code>code</code> command. The binary itself is already
+            notarized.
+          </p>
+        </div>
+        <pre><code>$ sudo ln -s \
+    /Applications/File13.app/Contents/Resources/file13 \
+    /usr/local/bin/file13</code></pre>
+        <p>
+          Verify with <code>file13 --version</code>. Accounts you have
+          added in the GUI are visible to the CLI without further setup,
+          because the two share the same keychain access group.
+        </p>
+
+        <h2 id="philosophy">Automation philosophy</h2>
+        <p>
+          The CLI is held to two rules. First, every action that mutates a
+          mailbox supports <code>--dry-run</code> and exits zero when the
+          dry run is satisfied. Second, the CLI honors the same VIP and
+          transactional protections as the GUI, and the same buffered-undo
+          window applies — there is no “bypass safety rails” flag.
+        </p>
+        <p>
+          Output is line-oriented and grep-friendly. JSON output is
+          available with <code>--format json</code> for downstream tooling.
+          The CLI does not paginate, does not colorize when piped, and
+          returns useful exit codes (see <a href="#exit-codes">§ exit codes</a>).
+        </p>
+
+        <h2 id="commands">Commands</h2>
+
+        <div class="cmd">
+          <div><code>file13 accounts list</code></div>
+          <p>List configured accounts and their connection state. Shared with the GUI.</p>
+        </div>
+        <div class="cmd">
+          <div><code>file13 accounts add &lt;email&gt;</code></div>
+          <p>Add a new account interactively. Prompts for IMAP host, port, and password.</p>
+        </div>
+        <div class="cmd">
+          <div><code>file13 senders [--min-count N] [--read-rate P] [--vip|--no-vip] [--format tsv|json|text]</code></div>
+          <p>Show one row per sender for the selected account and folder. Filter by minimum message count, read-rate threshold, or VIP status.</p>
+        </div>
+        <div class="cmd">
+          <div><code>file13 subjects [--cluster] [--since DATE]</code></div>
+          <p>List subject groups. <code>--cluster</code> uses the same normalization the GUI uses to merge near-duplicates.</p>
+        </div>
+        <div class="cmd">
+          <div><code>file13 fetch [--account NAME] [--folder NAME]</code></div>
+          <p>Refresh headers for the selected account and folder. Idempotent. Honors server rate limits.</p>
+        </div>
+        <div class="cmd">
+          <div><code>file13 archive --from ADDR | --query EXPR [--dry-run]</code></div>
+          <p>Archive matching messages to the account's archive folder. Always print affected counts before committing.</p>
+        </div>
+        <div class="cmd">
+          <div><code>file13 delete --from ADDR | --query EXPR [--dry-run]</code></div>
+          <p>Delete matching messages. Subject to the same VIP and transactional protections as the GUI. Refuses to run on more than 5,000 messages without an explicit <code>--yes-bulk</code>.</p>
+        </div>
+        <div class="cmd">
+          <div><code>file13 move --to FOLDER --from ADDR | --query EXPR [--dry-run]</code></div>
+          <p>Move messages between folders.</p>
+        </div>
+        <div class="cmd">
+          <div><code>file13 unsubscribe --from ADDR [--method http|mailto]</code></div>
+          <p>Perform a <code>List-Unsubscribe</code> action. With <code>http</code>, issues the one-click POST. With <code>mailto</code>, opens the URL in your default mail handler — File13 does not send mail.</p>
+        </div>
+        <div class="cmd">
+          <div><code>file13 rules list</code></div>
+          <p>Print active rules and the order in which they evaluate.</p>
+        </div>
+        <div class="cmd">
+          <div><code>file13 rules run [--dry-run]</code></div>
+          <p>Evaluate every rule against the current cache and apply the resulting actions through the buffered pipeline.</p>
+        </div>
+        <div class="cmd">
+          <div><code>file13 export --what categories|rules|vips [--format json|tsv]</code></div>
+          <p>Dump local state to stdout for backup or transfer to another machine.</p>
+        </div>
+        <div class="cmd">
+          <div><code>file13 license</code></div>
+          <p>Print the current license tier (<code>free</code> or <code>pro</code>) and the platform marker.</p>
+        </div>
+
+        <h2 id="query">The <code>--query</code> expression</h2>
+        <p>
+          A small, header-only query language. Supported terms:
+          <code>from:</code>, <code>to:</code>, <code>subject:</code>,
+          <code>list:</code>, <code>folder:</code>, <code>before:DATE</code>,
+          <code>after:DATE</code>, <code>read:true|false</code>,
+          <code>replied:true|false</code>, <code>size:&gt;NB</code>,
+          <code>category:NAME</code>. Combine with <code>AND</code>,
+          <code>OR</code>, and parentheses. Quote any term containing spaces.
+        </p>
+        <pre><code>file13 archive --query 'list:weekly-digest AND before:2026-01-01'</code></pre>
+
+        <h2 id="examples">Example workflows</h2>
+
+        <h3>Quarterly cleanup, scripted</h3>
+        <pre><code>#!/usr/bin/env zsh
+set -euo pipefail
+
+# refresh, then archive any digest older than 90 days
+file13 fetch --account personal
+file13 archive --account personal \
+  --query 'category:newsletter AND before:90d' \
+  --dry-run
+
+read "?Apply? (y/N) " confirm
+[[ "$confirm" == "y" ]] || exit 0
+
+file13 archive --account personal \
+  --query 'category:newsletter AND before:90d'</code></pre>
+
+        <h3>Nightly digest of new high-volume senders</h3>
+        <pre><code># crontab -e
+0 6 * * * /usr/local/bin/file13 senders \
+  --account work --min-count 10 --new-since 24h \
+  --format tsv | mail -s "new senders" you@example.com</code></pre>
+
+        <h3>Review before commit</h3>
+        <pre><code>file13 rules run --dry-run --format json > /tmp/plan.json
+jq '.actions | group_by(.kind) | map({kind: .[0].kind, count: length})' /tmp/plan.json</code></pre>
+
+        <h2 id="exit-codes">Exit codes</h2>
+        <ul>
+          <li><code>0</code> — success</li>
+          <li><code>1</code> — generic error</li>
+          <li><code>2</code> — usage error (bad arguments)</li>
+          <li><code>3</code> — IMAP connection failure</li>
+          <li><code>4</code> — Pro license required</li>
+          <li><code>5</code> — refused: action would affect more rows than the safety threshold</li>
+          <li><code>6</code> — destructive action aborted by VIP protection</li>
+          <li><code>7</code> — provider rate limit hit; retry later</li>
+        </ul>
+
+        <h2 id="safety">Safety rails</h2>
+        <div class="callout warn">
+          <div class="label">Notice</div>
+          <p>
+            A script that runs <code>file13 delete</code> in a loop can
+            remove a large amount of mail in a short period. The CLI is the
+            same engine the GUI uses, with the same protections, but it has
+            no human in the loop to catch a typo in a query. Run new
+            scripts with <code>--dry-run</code> first, and store backups of
+            anything you cannot afford to lose.
+          </p>
+        </div>
+        <ul>
+          <li>Every destructive verb prints a count and pauses for the configured undo window before committing. The window is the same one Settings uses.</li>
+          <li>Operations above 5,000 messages require <code>--yes-bulk</code>.</li>
+          <li>VIPs and transactional senders are protected unless you set <code>--allow-vip</code> and <code>--allow-transactional</code>, both of which are recorded in the log.</li>
+          <li>The CLI refuses to run on a File13 version that is more than 90 days behind the latest, to keep IMAP behavior in sync with what the GUI ships.</li>
+        </ul>
+
+        <h2 id="license">License and redistribution</h2>
+        <p>
+          The CLI is part of File13 and is released under the same
+          <a href="license.html">MIT License</a> as the rest of the project.
+          You are free to use, modify, and redistribute it under those terms.
+          Build it from source, script against it, or fork it — the only
+          condition is that the MIT copyright and permission notice travel
+          with the code.
+        </p>
+
+      </article>
+    </div>
+  </main>
+
+  <footer class="site">
+    <div class="wrap">
+      <div class="col"><a class="brand" href="index.html" style="margin-bottom:14px"><span class="brand-mark">F</span><span>File13</span></a><p style="color:var(--fg-3); font-size:var(--fs-13); max-width:36ch; margin:0">An inbox triage instrument. Metadata only, local processing, one-time purchase.</p></div>
+      <div class="col"><h4>Product</h4><ul><li><a href="index.html#features">Features</a></li><li><a href="cli.html">Command line</a></li><li><a href="ai.html">AI processing</a></li><li><a href="support.html">Support</a></li></ul></div>
+      <div class="col"><h4>Trust</h4><ul><li><a href="privacy.html">Privacy policy</a></li><li><a href="security.html">Security</a></li><li><a href="opensource.html">Acknowledgments</a></li></ul></div>
+      <div class="col"><h4>Legal</h4><ul><li><a href="license.html">License (MIT)</a></li><li><a href="mailto:dev@snxt.ai">dev@snxt.ai</a></li></ul></div>
+      <div class="legal" style="grid-column: 1 / -1"><span>© 2026 Shawn M. Brown.</span><span>Mac App Store and the Apple logo are trademarks of Apple Inc.</span></div>
+    </div>
+  </footer>
+
+</div>
+</body>
+</html>

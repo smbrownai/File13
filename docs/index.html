@@ -1,0 +1,479 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>File13 · An instrument for inbox triage on macOS and iOS</title>
+  <meta name="description" content="File13 is a metadata-only inbox triage app for macOS and iOS. Local processing, no body downloads, no telemetry, one-time purchase." />
+  <link rel="icon" href="assets/logo/favicon.svg" />
+  <link rel="stylesheet" href="colors_and_type.css" />
+  <link rel="stylesheet" href="site.css" />
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js" defer></script>
+  <!-- Replace every <i data-lucide="..."> placeholder with its SVG.
+       Both scripts use `defer` so they execute in document order after
+       parsing; lucide.js defines the global first, then this call uses
+       it. Without this, the icon containers render as empty boxes. -->
+  <script defer>document.addEventListener('DOMContentLoaded', () => lucide.createIcons());</script>
+
+  <!-- "Coming Soon" starburst. Pinned to the top-right corner so it
+       overlaps the topbar / hero — visible immediately on landing and
+       again on scroll. Pure SVG + CSS, no JS, no images. Remove this
+       whole <style> + <a> block when the app ships in the App Store. -->
+  <style>
+    .coming-soon {
+      position: fixed;
+      top: 14px;
+      right: 14px;
+      width: 124px;
+      height: 124px;
+      z-index: 1000;
+      transform: rotate(12deg);
+      transform-origin: center;
+      filter: drop-shadow(0 4px 10px rgba(59, 91, 219, 0.35));
+      text-decoration: none;
+    }
+    .coming-soon svg { display: block; width: 100%; height: 100%; }
+    .coming-soon .cs-burst { fill: var(--signal, #3B5BDB); }
+    .coming-soon .cs-line  { fill: #fff; font: 700 14px/1 -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif; text-anchor: middle; letter-spacing: 0.5px; }
+    .coming-soon .cs-sub   { fill: #fff; font: 600 9px/1 -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif; text-anchor: middle; letter-spacing: 1.2px; opacity: 0.92; }
+    @media (max-width: 720px) {
+      .coming-soon { width: 88px; height: 88px; top: 8px; right: 8px; }
+      .coming-soon .cs-line { font-size: 11px; }
+      .coming-soon .cs-sub  { font-size: 7px; }
+    }
+    @media (prefers-reduced-motion: no-preference) {
+      .coming-soon { animation: cs-pulse 4s ease-in-out infinite; }
+      @keyframes cs-pulse {
+        0%, 100% { transform: rotate(12deg) scale(1); }
+        50%      { transform: rotate(12deg) scale(1.05); }
+      }
+    }
+  </style>
+</head>
+<body>
+  <a class="coming-soon" href="#download" aria-label="Coming soon — not yet available on the App Store">
+    <svg viewBox="0 0 120 120" role="img" aria-hidden="true">
+      <polygon class="cs-burst" points="60,10 69.83,23.3 85,16.7 86.87,33.13 103.3,35 96.7,50.17 110,60 96.7,69.83 103.3,85 86.87,86.87 85,103.3 69.83,96.7 60,110 50.17,96.7 35,103.3 33.13,86.87 16.7,85 23.3,69.83 10,60 23.3,50.17 16.7,35 33.13,33.13 35,16.7 50.17,23.3" />
+      <text class="cs-sub"  x="60" y="50">NOT YET</text>
+      <text class="cs-line" x="60" y="66">Coming</text>
+      <text class="cs-line" x="60" y="82">Soon</text>
+    </svg>
+  </a>
+<div class="page">
+
+  <header class="topbar">
+    <div class="topbar-inner">
+      <a class="brand" href="index.html">
+        <span class="brand-mark">F</span>
+        <span>File13</span>
+      </a>
+      <nav class="nav">
+        <a href="#features">Features</a>
+        <a href="#privacy">Privacy</a>
+        <a href="cli.html">CLI</a>
+        <a href="ai.html">AI</a>
+        <a href="support.html">Support</a>
+        <span class="sep"></span>
+        <a class="btn btn-primary btn-sm" href="#download">Download</a>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+
+    <!-- ============================ Hero ============================ -->
+    <section class="hero">
+      <div class="wrap">
+        <span class="eyebrow">
+          <span style="width:6px;height:6px;border-radius:999px;background:var(--signal);display:inline-block"></span>
+          Version 1.0 · macOS 14+ · iOS 17+
+        </span>
+        <h1>Your email is yours. Not ours.</h1>
+        <p class="lede">
+         File13 is an inbox triage tool — not an email client. It connects to your existing accounts, fetches only headers, and never touches a server we own. No account creation. No subscriptions. No ads. No tracking. No investors — which means no one is pressuring us to monetize your attention, harvest your data, or grow at your expense. We answer to you, and only you. Processing is local. Privacy is the whole point.
+        </p>
+        <div class="cta-row">
+          <a class="btn btn-primary" href="#download">Download for Mac</a>
+          <a class="btn" href="#download">Download for iPhone/iPad</a>
+          <a class="btn" href="security.html">How it works<i data-lucide="arrow-up-right" style="width:14px;height:14px"></i></a>
+        </div>
+        <div class="meta">
+          <span><i data-lucide="lock" style="width:12px;height:12px"></i> Metadata only</span>
+          <span><i data-lucide="cpu" style="width:12px;height:12px"></i> Local processing</span>
+          <span><i data-lucide="ban" style="width:12px;height:12px"></i> No subscription</span>
+          <span><i data-lucide="terminal" style="width:12px;height:12px"></i> Bundled CLI · Pro</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================ Positioning ============================ -->
+    <section class="section">
+      <div class="wrap split">
+        <div>
+          <span class="eyebrow">Positioning</span>
+          <h2>An instrument, not a client.</h2>
+          <p class="lede">
+            Most mail apps want to be where you live. File13 is the opposite.
+            You open it when an inbox has gotten away from you, work through it
+            quickly, and close it. Your mail client stays where it is.
+          </p>
+        </div>
+        <div class="pull">
+          “File13 reads what is already on the envelope. It never opens the letter.”
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================ Features ============================ -->
+    <section class="section" id="features">
+      <div class="wrap">
+        <span class="eyebrow">Features</span>
+        <h2>Everything you need to triage a real inbox.</h2>
+        <p class="lede">
+          File13 groups your mail the way your eyes already do — by sender, by
+          subject, by date — and lets you act on entire groups in one motion.
+        </p>
+
+        <div class="grid-3">
+          <div class="feature">
+            <div class="icon"><i data-lucide="users" style="width:16px;height:16px"></i></div>
+            <h3>Sender view</h3>
+            <p>Collapse the inbox into one row per sender. See volume, read rate, replies, and unsubscribe links at a glance.</p>
+          </div>
+          <div class="feature">
+            <div class="icon"><i data-lucide="message-square" style="width:16px;height:16px"></i></div>
+            <h3>Subject clusters</h3>
+            <p>Group related threads by normalized subject. Useful for receipts, notifications, and recurring digests.</p>
+          </div>
+          <div class="feature">
+            <div class="icon"><i data-lucide="calendar" style="width:16px;height:16px"></i></div>
+            <h3>Date view</h3>
+            <p>Walk the inbox by week or month. Archive everything older than a date with one action.</p>
+          </div>
+          <div class="feature">
+            <div class="icon"><i data-lucide="trash-2" style="width:16px;height:16px"></i></div>
+            <h3>Bulk actions</h3>
+            <p>Delete, archive, or move thousands of messages with a buffered undo window. Nothing leaves the client until the timer expires.</p>
+          </div>
+          <div class="feature">
+            <div class="icon"><i data-lucide="link" style="width:16px;height:16px"></i></div>
+            <h3>Unsubscribe workflows</h3>
+            <p>One-click <code>List-Unsubscribe</code> handling, including the one-click POST flow. File13 never sends mail on your behalf.</p>
+          </div>
+          <div class="feature">
+            <div class="icon"><i data-lucide="filter" style="width:16px;height:16px"></i></div>
+            <h3>Rules</h3>
+            <p>Persistent rules run on each fetch. Conditions are header-based; actions are bounded; VIPs are protected by default.</p>
+          </div>
+          <div class="feature">
+            <div class="icon"><i data-lucide="star" style="width:16px;height:16px"></i></div>
+            <h3>VIP detection</h3>
+            <p>Senders you reply to or read consistently are flagged automatically. Destructive bulk actions skip them unless you opt in.</p>
+          </div>
+          <div class="feature">
+            <div class="icon"><i data-lucide="sparkles" style="width:16px;height:16px"></i></div>
+            <h3>AI assistance</h3>
+            <p>Optional categorization and rule suggestions. Default provider is Apple Foundation Models, on-device.</p>
+          </div>
+          <div class="feature">
+            <div class="icon"><i data-lucide="terminal" style="width:16px;height:16px"></i></div>
+            <h3>Bundled CLI <span class="badge" style="margin-left:6px; vertical-align:middle"><span class="dot signal"></span>Pro</span></h3>
+            <p>The <code>file13</code> binary ships inside the app. Scriptable triage for power users, cron jobs, and CI. Requires File13 Pro.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================ Privacy ============================ -->
+    <section class="section" id="privacy">
+      <div class="wrap">
+        <span class="eyebrow">Privacy</span>
+        <h2>Metadata only. By design, not by policy.</h2>
+        <p class="lede">
+          The privacy posture is a constraint in the code, not a promise in a
+          settings pane. There is no toggle that turns on body downloads,
+          because there is no code path that downloads bodies.
+        </p>
+
+        <div class="compare">
+          <div>
+            <h3>What File13 reads</h3>
+            <ul>
+              <li><span class="dot"></span>Headers — <code>From</code>, <code>To</code>, <code>Subject</code>, <code>Date</code></li>
+              <li><span class="dot"></span><code>List-Unsubscribe</code> and <code>List-Id</code></li>
+              <li><span class="dot"></span>Flags — read, replied, flagged</li>
+              <li><span class="dot"></span>Folder and account name</li>
+              <li><span class="dot"></span>Message size as reported by the server</li>
+            </ul>
+          </div>
+          <div class="x">
+            <h3>What File13 never reads</h3>
+            <ul>
+              <li><span class="dot"></span>Message bodies, in any format</li>
+              <li><span class="dot"></span>Attachments or inline images</li>
+              <li><span class="dot"></span>Tracking pixels — they are never fetched</li>
+              <li><span class="dot"></span>HTML rendered content</li>
+              <li><span class="dot"></span>Anything outside the folders you connect</li>
+            </ul>
+          </div>
+        </div>
+
+        <div style="margin-top:32px; display:flex; gap:10px; flex-wrap:wrap">
+          <a class="btn" href="privacy.html">Read the privacy policy <i data-lucide="arrow-right" style="width:14px;height:14px"></i></a>
+          <a class="btn" href="security.html">Security and architecture</a>
+          <a class="btn" href="ai.html">AI processing details</a>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================ AI ============================ -->
+    <section class="section">
+      <div class="wrap split">
+        <div>
+          <span class="eyebrow">AI assistance</span>
+          <h2>On-device first. External providers are optional and key-scoped.</h2>
+          <p style="color:var(--fg-2); line-height:var(--lh-loose); max-width:60ch">
+            The default provider is Apple Foundation Models, which runs on-device
+            or in Apple's Private Cloud Compute. If you choose to use Anthropic,
+            OpenAI, Google, or Perplexity, you supply your own API key and the
+            request goes from your machine to their endpoint. File13 has no
+            inference server of its own.
+          </p>
+          <p style="color:var(--fg-2); line-height:var(--lh-loose); max-width:60ch">
+            What is sent: senders, subjects, list headers, dates, flags, and
+            read state. What is not sent: anything else.
+          </p>
+        </div>
+        <div class="card">
+          <div class="eyebrow" style="margin-bottom:14px">Providers</div>
+          <ul style="list-style:none; padding:0; margin:0; display:flex; flex-direction:column; gap:14px; font-size:var(--fs-14)">
+            <li style="display:flex; justify-content:space-between; align-items:center; gap:12px">
+              <span><strong>Apple Foundation Models</strong><br><span style="color:var(--fg-3); font-size:var(--fs-13)">On-device · default</span></span>
+              <span class="badge"><span class="dot ok"></span>recommended</span>
+            </li>
+            <li style="display:flex; justify-content:space-between; align-items:center; gap:12px; border-top:1px solid var(--line); padding-top:14px">
+              <span>Anthropic Claude<br><span style="color:var(--fg-3); font-size:var(--fs-13)">Your API key</span></span>
+              <span class="badge">optional</span>
+            </li>
+            <li style="display:flex; justify-content:space-between; align-items:center; gap:12px; border-top:1px solid var(--line); padding-top:14px">
+              <span>OpenAI<br><span style="color:var(--fg-3); font-size:var(--fs-13)">Your API key</span></span>
+              <span class="badge">optional</span>
+            </li>
+            <li style="display:flex; justify-content:space-between; align-items:center; gap:12px; border-top:1px solid var(--line); padding-top:14px">
+              <span>Google Gemini<br><span style="color:var(--fg-3); font-size:var(--fs-13)">Your API key</span></span>
+              <span class="badge">optional</span>
+            </li>
+            <li style="display:flex; justify-content:space-between; align-items:center; gap:12px; border-top:1px solid var(--line); padding-top:14px">
+              <span>Perplexity<br><span style="color:var(--fg-3); font-size:var(--fs-13)">Your API key</span></span>
+              <span class="badge">optional</span>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================ CLI ============================ -->
+    <section class="section">
+      <div class="wrap split">
+        <div>
+          <span class="eyebrow">Command line · Pro</span>
+          <h2>The same engine, scripted.</h2>
+          <p style="color:var(--fg-2); line-height:var(--lh-loose); max-width:60ch">
+            <code>file13</code> ships inside the app bundle and is unlocked
+            by File13 Pro. Install the symlink from Edit → Install File13
+            CLI… and the binary becomes available in your shell. Accounts and
+            credentials are shared with the GUI through the same keychain
+            access group.
+          </p>
+          <p style="color:var(--fg-2); line-height:var(--lh-loose); max-width:60ch">
+            The CLI is intended for automation that the GUI cannot reasonably
+            cover: nightly digests of new senders, cron-driven archival, or
+            staged cleanups reviewed in a pull request.
+          </p>
+          <div style="margin-top:24px"><a class="btn" href="cli.html">CLI documentation <i data-lucide="arrow-right" style="width:14px;height:14px"></i></a></div>
+        </div>
+        <div>
+          <div class="terminal">
+            <span class="comment"># list every sender with more than 50 messages and a 0% read rate</span><br>
+            <span class="prompt">$</span> file13 senders <span class="flag">--min-count</span> 50 <span class="flag">--read-rate</span> 0<br>
+            <span class="comment"># archive everything from a sender, dry run first</span><br>
+            <span class="prompt">$</span> file13 archive <span class="flag">--from</span> news@example.com <span class="flag">--dry-run</span><br>
+            <span class="prompt">$</span> file13 archive <span class="flag">--from</span> news@example.com<br>
+            <span class="comment"># export the current sender table for review elsewhere</span><br>
+            <span class="prompt">$</span> file13 senders <span class="flag">--format</span> tsv &gt; senders.tsv
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================ Pricing ============================ -->
+    <section class="section" id="download">
+      <div class="wrap">
+        <span class="eyebrow">
+          Pricing
+          <span class="badge" style="margin-left:8px; vertical-align:middle">
+            <span class="dot signal"></span>Coming soon — not yet on the App Store
+          </span>
+        </span>
+        <h2>One purchase. Unlimited mailboxes.</h2>
+        <p class="lede">
+          File13 is a one-time purchase via the Mac App Store, with
+          Universal Purchase across Mac, iPhone, and iPad, and Family
+          Sharing enabled. The free tier is fully functional on all of
+          your Apple devices for one mailbox; Pro adds unlimited mailboxes
+          and the bundled command-line tool.
+        </p>
+
+        <div class="grid-2" style="max-width:760px">
+          <div class="card">
+            <div class="eyebrow">Free</div>
+            <div style="display:flex; align-items:baseline; gap:6px; margin:14px 0 16px">
+              <span style="font-size:var(--fs-36); font-weight:var(--w-semibold); letter-spacing:-0.02em">$0</span>
+            </div>
+            <ul style="list-style:none; padding:0; margin:0 0 24px; display:flex; flex-direction:column; gap:8px; font-size:var(--fs-14); color:var(--fg-2)">
+              <li>One mailbox</li>
+              <li>Mac, iPhone, and iPad</li>
+              <li>All triage features</li>
+              <li>On-device AI (Apple Foundation Models)</li>
+              <li>External AI providers (your API keys)</li>
+            </ul>
+            <a class="btn" href="#" style="width:100%; justify-content:center">Download</a>
+          </div>
+          <div class="card" style="border-color:var(--ink); position:relative">
+            <div class="eyebrow" style="color:var(--signal)">File13 Pro</div>
+            <div style="display:flex; align-items:baseline; gap:6px; margin:14px 0 16px">
+              <span style="font-size:var(--fs-36); font-weight:var(--w-semibold); letter-spacing:-0.02em">$14.99</span>
+              <span style="color:var(--fg-3); font-size:var(--fs-14)">one time</span>
+            </div>
+            <ul style="list-style:none; padding:0; margin:0 0 24px; display:flex; flex-direction:column; gap:8px; font-size:var(--fs-14); color:var(--fg-2)">
+              <li>Everything in Free</li>
+              <li>Unlimited mailboxes</li>
+              <li>Command-line tool (<code>file13</code>)</li>
+              <li>Family Sharing</li>
+              <li>Future updates included</li>
+            </ul>
+            <a class="btn btn-primary" href="#" style="width:100%; justify-content:center">Get File13 Pro</a>
+          </div>
+        </div>
+        <p style="color:var(--fg-3); font-size:var(--fs-13); margin-top:20px; max-width:60ch">
+          Pricing in USD. Local currency, taxes, and availability handled by the App Store.
+          “Lifetime” refers to the commercially supported life of the product, defined in the
+          <a href="support.html">support policy</a>.
+        </p>
+      </div>
+    </section>
+
+    <!-- ============================ Workflow examples ============================ -->
+    <section class="section">
+      <div class="wrap">
+        <span class="eyebrow">Examples</span>
+        <h2>Three ways people use it.</h2>
+        <div class="grid-3">
+          <div class="feature">
+            <h3>The quarterly purge</h3>
+            <p>Open File13 on a Sunday. Sort senders by volume, archive newsletters older than 90 days, unsubscribe from the bottom quartile, and close the app for another quarter.</p>
+          </div>
+          <div class="feature">
+            <h3>The post-conference cleanup</h3>
+            <p>Filter senders that first wrote to you in the last two weeks. Move the worthwhile ones to a follow-up folder. Delete the rest.</p>
+          </div>
+          <div class="feature">
+            <h3>The scripted nightly</h3>
+            <p>Run <code>file13</code> from cron. Archive receipts to a receipts folder, surface any new high-volume sender by email digest, and exit.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================ FAQ ============================ -->
+    <section class="section">
+      <div class="wrap-narrow">
+        <span class="eyebrow">FAQ</span>
+        <h2 style="margin-bottom:32px">Common questions.</h2>
+        <div class="faq">
+          <details>
+            <summary>Does File13 replace my email client?</summary>
+            <p>No. File13 is a triage instrument. It cannot read message bodies and has no SMTP, so it cannot send mail. Use it alongside Mail, Outlook, or whatever you already have.</p>
+          </details>
+          <details>
+            <summary>How does it connect to my mail?</summary>
+            <p>Over IMAP, using a password or app-specific password. Credentials are stored in the macOS or iOS Keychain. iCloud Keychain sync is opt-in. There is no File13 server, and no account to create.</p>
+          </details>
+          <details>
+            <summary>What does “metadata only” actually mean?</summary>
+            <p>File13 issues <code>FETCH</code> commands for headers, flags, and structure — never <code>BODY[]</code>. Tracking pixels and external images are not requested. The full data model is documented on the <a href="security.html">security page</a>.</p>
+          </details>
+          <details>
+            <summary>Is the AI required?</summary>
+            <p>No. Every AI feature is optional and can be disabled. The default provider is Apple Foundation Models, which runs on-device. External providers require your own API key.</p>
+          </details>
+          <details>
+            <summary>What happens to my data if I stop paying?</summary>
+            <p>Nothing. File13 is a one-time purchase, not a subscription. Your headers cache is local to your device. Your credentials are in your Keychain. There is nothing to revoke.</p>
+          </details>
+          <details>
+            <summary>Can the CLI delete my whole inbox?</summary>
+            <p>Yes, given enough flags, which is why every destructive command supports <code>--dry-run</code> and respects the same VIP and confirmation rules as the GUI. The <a href="cli.html">CLI page</a> covers safeguards in detail.</p>
+          </details>
+          <details>
+            <summary>Does File13 work with Gmail and Outlook?</summary>
+            <p>Yes, as standard IMAP, using an app-specific password. OAuth scaffolding is in place but no provider is currently wired — see the <a href="security.html#oauth">security page</a> for context.</p>
+          </details>
+          <details>
+            <summary>Is the source available?</summary>
+            <p>Yes. File13 is open source under the <a href="license.html">MIT License</a> — read it, build it, or fork it on <a href="https://github.com/smbrownai/file13">GitHub</a>. The Mac App Store build is a paid convenience; it isn't required to use the software. Third-party components are credited on the <a href="opensource.html">acknowledgments page</a>.</p>
+          </details>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ============================ Footer ============================ -->
+  <footer class="site">
+    <div class="wrap">
+      <div class="col">
+        <a class="brand" href="index.html" style="margin-bottom:14px">
+          <span class="brand-mark">F</span>
+          <span>File13</span>
+        </a>
+        <p style="color:var(--fg-3); font-size:var(--fs-13); max-width:36ch; margin:0">
+          An inbox triage instrument. Metadata only, local processing, one-time
+          purchase. Made for macOS and iOS.
+        </p>
+      </div>
+      <div class="col">
+        <h4>Product</h4>
+        <ul>
+          <li><a href="index.html#features">Features</a></li>
+          <li><a href="cli.html">Command line</a></li>
+          <li><a href="ai.html">AI processing</a></li>
+          <li><a href="support.html">Support</a></li>
+        </ul>
+      </div>
+      <div class="col">
+        <h4>Trust</h4>
+        <ul>
+          <li><a href="privacy.html">Privacy policy</a></li>
+          <li><a href="security.html">Security</a></li>
+          <li><a href="opensource.html">Acknowledgments</a></li>
+        </ul>
+      </div>
+      <div class="col">
+        <h4>Legal</h4>
+        <ul>
+          <li><a href="license.html">License (MIT)</a></li>
+          
+          <li><a href="mailto:dev@snxt.ai">dev@snxt.ai</a></li>
+        </ul>
+      </div>
+      <div class="legal" style="grid-column: 1 / -1">
+        <span>© 2026 Shawn M. Brown.</span>
+        <span>Mac App Store and the Apple logo are trademarks of Apple Inc.</span>
+      </div>
+    </div>
+  </footer>
+
+</div>
+</body>
+</html>

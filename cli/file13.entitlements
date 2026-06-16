@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <!--
+        DELIBERATELY EMPTY.
+
+        Earlier versions of this file claimed `com.apple.security.application-groups`
+        and `keychain-access-groups` to mirror the GUI app. Those are *restricted*
+        entitlements: macOS amfid requires an embedded provisioning profile to
+        validate them, which app bundles carry and bare CLI binaries do not.
+        Signing the CLI with those entitlements made amfid kill the binary on
+        launch with `Error Code=-413 "No matching profile found"`.
+
+        The CLI no longer claims any restricted entitlements. It still works
+        because:
+
+          - The App Group container directory at
+            `~/Library/Group Containers/group.com.shawnbrown.file13/` is
+            created by the GUI app on first launch. Any process owned by the
+            same user can read/write that tree as plain filesystem paths.
+            `FileManager.containerURL(forSecurityApplicationGroupIdentifier:)`
+            still resolves the path even without the entitlement.
+
+          - SwiftData store + UserDefaults suite + lock file all live inside
+            that container, so they're reachable by the CLI.
+
+          - Keychain entries are CLI-managed (default user keychain, no access
+            group). The CLI's `accounts add` writes IMAP passwords there;
+            future `providers set-key` will write API keys the same way. They
+            do NOT mix with the GUI's access-group entries — running
+            `file13 mail …` against an account added in the GUI will fail
+            credential lookup. Re-add accounts on the CLI side to use them
+            from headless context.
+
+        If/when distribution moves to a `.pkg` installer with an embedded
+        provisioning profile, restoring the App Group + Keychain entitlements
+        becomes possible. Out of scope for the current Homebrew-tap path.
+
+        **Update (2026-05-11):** the MAS-distributed app now bundles the CLI
+        inside `File13.app/Contents/Resources/file13` (built by
+        `scripts/embed-cli.sh`) and signs it with restored entitlements via
+        `File13/File13-CLI.entitlements`. That variant shares the GUI's
+        App Group container and keychain access group, so accounts added
+        by the bundled CLI are visible to the GUI and vice versa. This
+        file stays empty because the Homebrew-tap binary path (still
+        served by `cli/Scripts/release.sh`) cannot carry a provisioning
+        profile and would be killed by amfid if it claimed restricted
+        entitlements.
+    -->
+</dict>
+</plist>

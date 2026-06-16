@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>NSPrivacyTracking</key>
+	<false/>
+	<key>NSPrivacyTrackingDomains</key>
+	<array/>
+	<key>NSPrivacyCollectedDataTypes</key>
+	<array/>
+	<key>NSPrivacyAccessedAPITypes</key>
+	<array>
+		<dict>
+			<key>NSPrivacyAccessedAPIType</key>
+			<string>NSPrivacyAccessedAPICategoryUserDefaults</string>
+			<key>NSPrivacyAccessedAPITypeReasons</key>
+			<array>
+				<!-- CA92.1: Read/write to App Group shared UserDefaults
+				     (`group.com.shawnbrown.file13`) shared between the
+				     GUI app, the iOS app, and the Homebrew-distributed
+				     `file13` CLI within the same publisher's app suite.
+				     See `SharedDefaults.swift` and `FileBackedUserDefaults.swift`. -->
+				<string>CA92.1</string>
+			</array>
+		</dict>
+		<dict>
+			<key>NSPrivacyAccessedAPIType</key>
+			<string>NSPrivacyAccessedAPICategoryFileTimestamp</string>
+			<key>NSPrivacyAccessedAPITypeReasons</key>
+			<array>
+				<!-- C617.1: Inspect modification time of the file-backed
+				     UserDefaults plist for the current app, to detect
+				     out-of-band writes from the companion CLI process
+				     (which writes to the same App Group container). Used
+				     only on a file File13 itself owns; no cross-app
+				     file timestamp access.
+				     See `FileBackedUserDefaults.swift` (mtime polling). -->
+				<string>C617.1</string>
+			</array>
+		</dict>
+	</array>
+</dict>
+</plist>

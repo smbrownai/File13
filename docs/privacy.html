@@ -1,0 +1,377 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Privacy policy · File13</title>
+  <meta name="description" content="What File13 processes, what it does not collect, and how it handles credentials, AI requests, and optional iCloud sync." />
+  <link rel="icon" href="assets/logo/favicon.svg" />
+  <link rel="stylesheet" href="colors_and_type.css" />
+  <link rel="stylesheet" href="site.css" />
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js" defer></script>
+</head>
+<body>
+<div class="page">
+
+  <header class="topbar">
+    <div class="topbar-inner">
+      <a class="brand" href="index.html"><span class="brand-mark">F</span><span>File13</span></a>
+      <nav class="nav">
+        <a href="index.html#features">Features</a>
+        <a href="privacy.html" class="current">Privacy</a>
+        <a href="cli.html">CLI</a>
+        <a href="ai.html">AI</a>
+        <a href="support.html">Support</a>
+        <span class="sep"></span>
+        <a class="btn btn-primary btn-sm" href="index.html#download">Download</a>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <div class="wrap">
+      <div class="page-header">
+        <span class="eyebrow">Trust</span>
+        <h1>Privacy policy</h1>
+        <p class="lede">
+          The shortest version: File13 reads message headers. It does not
+          read message bodies, and it has no servers of its own. This page
+          describes what happens to the small amount of metadata File13
+          does process.
+        </p>
+        <div class="meta">
+          <span>Effective 2026-05-13</span>
+          <span>·</span>
+          <span>Version 1.0</span>
+        </div>
+      </div>
+
+      <div class="legal-layout">
+        <aside>
+          <div class="toc">
+            <h4>Contents</h4>
+            <ol>
+              <li><a href="#summary">Summary</a></li>
+              <li><a href="#scope">Scope</a></li>
+              <li><a href="#processed">Data processed</a></li>
+              <li><a href="#not-collected">Data not collected</a></li>
+              <li><a href="#local">Local processing</a></li>
+              <li><a href="#credentials">Credentials</a></li>
+              <li><a href="#icloud">iCloud sync</a></li>
+              <li><a href="#ai">AI providers</a></li>
+              <li><a href="#telemetry">Telemetry</a></li>
+              <li><a href="#third-party">Third parties</a></li>
+              <li><a href="#retention">Retention</a></li>
+              <li><a href="#rights">Your rights</a></li>
+              <li><a href="#children">Children</a></li>
+              <li><a href="#changes">Changes</a></li>
+              <li><a href="#contact">Contact</a></li>
+            </ol>
+          </div>
+        </aside>
+
+        <article class="prose">
+
+          <h2 id="summary">1. Summary</h2>
+          <p>
+            File13 is metadata-only by construction. It fetches headers from
+            your IMAP mail accounts to surface senders, subjects, and engagement
+            signals, and provides bulk actions to delete, archive, move, and
+            unsubscribe. No body content is fetched, stored, or transmitted to
+            any third party. There is no File13 account, no File13 server,
+            and no advertising network.
+          </p>
+
+          <h2 id="scope">2. Scope</h2>
+          <p>
+            This policy applies to the File13 application for macOS and iOS,
+            the bundled <code>file13</code> command-line tool, and this
+            website. References to “File13” mean the application;
+            references to the developer mean an individual maintaining 
+            the project as a personal endeavor.
+          </p>
+
+          <h2 id="processed">3. Data File13 processes</h2>
+          <p>
+            File13 processes the minimum metadata needed to make triage
+            decisions. The full list is small enough to enumerate:
+          </p>
+          <ul>
+            <li>Email envelope fields: <code>From</code>, <code>To</code>, <code>Cc</code>, <code>Subject</code>, <code>Date</code>, <code>Message-ID</code>, <code>In-Reply-To</code>, <code>References</code>.</li>
+            <li>List headers: <code>List-Unsubscribe</code>, <code>List-Unsubscribe-Post</code>, <code>List-Id</code>.</li>
+            <li>IMAP flags: <code>\Seen</code>, <code>\Answered</code>, <code>\Flagged</code>, <code>\Deleted</code>, custom keywords.</li>
+            <li>Server-reported message size in bytes (<code>RFC822.SIZE</code>).</li>
+            <li>A single boolean per message indicating whether at least one attachment is present. Computed from the IMAP <code>BODYSTRUCTURE</code> response when requested; the rest of <code>BODYSTRUCTURE</code> (attachment filenames, MIME types, part sizes) is parsed only to compute that boolean and then discarded. The cache stores only the boolean.</li>
+            <li>Folder names you have connected and the UIDs of messages within them.</li>
+            <li>Your account configuration: email address, IMAP host and port, display name, the preferences you choose in Settings.</li>
+            <li>The categories, rules, VIP lists, suggestion dismissals, and replied-to message IDs you generate while using the app.</li>
+            <li>A presence check, for each message, against a bundled list of ~5,400 known disposable / throwaway email domains (e.g., Mailinator, GuerrillaMail). The list is the public-domain (CC0) <a href="https://github.com/disposable-email-domains/disposable-email-domains" rel="noopener">disposable-email-domains</a> dataset, shipped inside the application binary. The check runs entirely on-device; no sender address is sent off-device for this purpose, no result is recorded outside the local cache.</li>
+          </ul>
+          <p>
+            <strong>Local processing vs. AI processing.</strong> The list
+            above is the full set of fields File13 <em>reads and caches
+            locally</em>. When you use AI-assisted features with a third-party
+            provider, only a narrower subset of these fields is sent off-device
+            — the exact payload is enumerated in §8 below and on the
+            <a href="ai.html">AI processing page</a>. Recipient lists
+            (<code>To</code>, <code>Cc</code>), <code>Message-ID</code>,
+            <code>In-Reply-To</code>, and <code>References</code> are used
+            <em>only</em> for local grouping, deduplication, and reply
+            detection; they do not cross File13's AI boundary.
+          </p>
+
+          <h2 id="not-collected">4. Data File13 does not process</h2>
+          <p>
+            The following are not read, not stored, and not transmitted:
+          </p>
+          <ul>
+            <li>Message bodies, in any MIME part, in any format.</li>
+            <li>Attachment content, attachment filenames, MIME types, or per-part byte counts. File13 may observe (via <code>BODYSTRUCTURE</code>) that a message <em>has</em> attachments, as noted in §3 — but the only thing retained from that observation is a single boolean. Filenames, image bytes, document bytes, and embedded-media bytes are never fetched, never parsed beyond the presence check, and never stored.</li>
+            <li>Tracking pixels — external URLs in mail are never fetched by File13.</li>
+            <li>Calendar, contacts, photos, location, or any other system data outside the IMAP accounts you connect.</li>
+            <li>Behavioral analytics: there is no advertising SDK, no fingerprinting, no cross-app tracking.</li>
+          </ul>
+
+          <h2 id="local">5. Local processing</h2>
+          <p>
+            All triage logic — grouping, deduplication, VIP detection, rule
+            evaluation, the buffered-undo timer — runs on your device. Cached
+            headers are persisted locally using Apple's SwiftData framework
+            inside the application's sandboxed container. The cache is not
+            mirrored to iCloud and is removed when you delete the application
+            or disconnect the account.
+          </p>
+
+          <h2 id="credentials">6. Credentials</h2>
+          <p>
+            IMAP passwords, app-specific passwords, and any third-party AI
+            provider API keys you enter are stored in the system Keychain
+            (macOS Keychain or iOS Keychain). File13 routes every keychain
+            operation through a single store so the iCloud-sync flag is
+            consistent across items.
+          </p>
+          <p>
+            By default, credentials are marked <code>kSecAttrAccessibleWhenUnlockedThisDeviceOnly</code>
+            and do not sync. If you enable “Sync passwords with iCloud
+            Keychain” in Settings → General, existing items are migrated to
+            <code>kSecAttrAccessibleWhenUnlocked</code> and become available
+            on your other Apple devices via Apple's iCloud Keychain. This is
+            a per-device preference; turning it off removes the synchronizable
+            flag and restores device-only storage.
+          </p>
+
+          <h2 id="icloud">7. iCloud settings sync</h2>
+          <p>
+            “Sync settings with iCloud” in Settings → General is opt-in and
+            separate from iCloud Keychain. When enabled, File13 mirrors a
+            narrow allowlist of preferences to <code>NSUbiquitousKeyValueStore</code>:
+          </p>
+          <ul>
+            <li>Accounts list — email addresses, IMAP host and port, and display names. <strong>Passwords are not included.</strong></li>
+            <li>Rules you have created.</li>
+            <li>AI provider preferences (provider choice, model). <strong>API keys are not included.</strong></li>
+            <li>Triage state: sender categories, VIPs, suggestion dismissals, replied-message IDs.</li>
+            <li>UI preferences: window state, default views, undo buffer length.</li>
+          </ul>
+          <p>
+            The cached headers, IMAP UID validity, fetch progress, and any
+            Keychain item are explicitly excluded from this sync path. The
+            allowlist is enforced in code.
+          </p>
+
+          <h3 id="triage-state">7.1 What “triage state” actually contains</h3>
+          <p>
+            Sender categories are stored as a map from sender address to a
+            category label (newsletter, transactional, promotional, social,
+            notification, personal, other). VIPs are a set of sender
+            addresses. Suggestion dismissals are short fingerprints of
+            already-rejected rule suggestions. Replied-message IDs are RFC
+            822 <code>Message-Id</code> strings of messages you have
+            answered. All of these are derived from metadata — none of them
+            contain body text, attachments, or anything fetched from a
+            message payload. They ride iCloud KV under the same
+            metadata-only contract as the rest of the allowlist.
+          </p>
+
+          <h3 id="convergence">7.2 How categories behave across devices</h3>
+          <p>
+            AI inference always runs on the device that requested it — either
+            Apple Foundation Models locally, or a third-party provider you
+            configured with your own API key. With iCloud settings sync
+            <strong>enabled</strong>, each device's categorizations are
+            mirrored to iCloud KV and merged: senders one device has
+            classified that another hasn't are unioned in; if both devices
+            classified the same sender differently, the most recently synced
+            classification wins. With iCloud settings sync
+            <strong>disabled</strong>, categories are per-device, and the
+            same sender may end up labeled differently on different devices
+            because AI inference has run-to-run variance. This is the
+            tradeoff of running inference on your hardware rather than on a
+            File13-operated server: convergence is opt-in via Apple's KV
+            store, never via anything File13 runs.
+          </p>
+          <p>
+            Even with iCloud sync on, message bodies still never leave the
+            device, never reach iCloud, and never reach any third party.
+          </p>
+
+          <h3 id="adp">7.3 Advanced Data Protection</h3>
+          <p>
+            Synced settings ride iCloud KV-store under Apple's
+            <strong>Standard Data Protection</strong>: encrypted in transit
+            and at rest, with Apple holding the keys. This is the same
+            posture that covers iCloud Mail, Notes, Calendars, and
+            Reminders for most users, and we consider it appropriate for
+            metadata of the kind described in §7.1 (sender addresses,
+            category labels, VIP sets, suggestion fingerprints,
+            replied-message IDs).
+          </p>
+          <p>
+            If your threat model calls for stronger guarantees on the
+            synced metadata, turning on
+            <strong>Advanced Data Protection</strong> for iCloud extends
+            end-to-end encryption to iCloud KV-store. With ADP on, the
+            categories, VIPs, replied-message IDs, and accounts list that
+            File13 mirrors to iCloud become readable only on your
+            signed-in Apple devices — Apple no longer holds the keys.
+          </p>
+          <p>
+            What ADP does <em>not</em> change for File13:
+          </p>
+          <ul>
+            <li>iCloud Keychain (where IMAP passwords and AI provider API keys live when “Sync passwords with iCloud Keychain” is on) is end-to-end encrypted regardless of ADP. Credentials do not gain anything from ADP and do not lose anything without it.</li>
+            <li>Message bodies are not synced either way. File13 never reads them and never transmits them; nothing on the iCloud side changes that.</li>
+            <li>Cached headers, IMAP UID validity, and fetch progress are not synced either way — they live only in the application's sandboxed container on each device.</li>
+          </ul>
+          <p>
+            ADP is an Apple feature, configured in
+            <strong>Settings → [your name] → iCloud → Advanced Data Protection</strong>
+            (or the equivalent on macOS). It requires all your signed-in
+            Apple devices to meet Apple's minimum OS version and to have
+            two-factor authentication enabled. See
+            <a href="https://support.apple.com/108756" rel="noopener">Apple's support article on Advanced Data Protection</a>
+            for current requirements and tradeoffs.
+          </p>
+
+          <h2 id="ai">8. AI providers</h2>
+          <p>
+            File13 offers optional AI assistance for sender categorization,
+            triage suggestions, and rule proposals. The default provider is
+            Apple Foundation Models, which runs on-device or, for larger
+            requests, in Apple's Private Cloud Compute. No content leaves
+            Apple's privacy boundary.
+          </p>
+          <p>
+            You may instead configure Anthropic, OpenAI, Google, or Perplexity
+            as a provider, using your own API key. When you do, the
+            information sent for each request is limited to the metadata
+            described in §3: sender addresses, subjects, list headers, dates,
+            flags, read state, and your prompt. File13 acts as a client; the
+            provider's own privacy policy governs what they do with the
+            request. File13 has no inference server of its own and does not
+            log AI requests.
+          </p>
+          <p>
+            See the <a href="ai.html">AI processing page</a> for the full
+            list of what is sent for each feature.
+          </p>
+
+          <h2 id="telemetry">9. Telemetry</h2>
+          <p>
+            File13 ships with no analytics SDK and collects no telemetry by
+            default. If you opt in to “Share anonymous diagnostics” (off by
+            default), File13 will submit crash reports through Apple's
+            standard reporting mechanism. These reports contain stack traces
+            and process metadata; they do not contain email content or
+            account credentials. You can revoke this at any time in macOS or
+            iOS system settings.
+          </p>
+
+          <h2 id="third-party">10. Third parties</h2>
+          <p>
+            File13 interacts with three categories of third parties on your
+            behalf:
+          </p>
+          <ul>
+            <li><strong>Your mail providers</strong> (for example, Fastmail, Gmail, iCloud Mail). File13 speaks IMAP to them directly using credentials you supply. Their privacy policies govern what they log about the connection.</li>
+            <li><strong>Apple</strong>, for the Mac App Store, Universal Purchase, Family Sharing, iCloud Keychain, iCloud KV-Store, and Foundation Models. Apple's privacy policy applies to these services.</li>
+            <li><strong>An AI provider you optionally configure</strong>, addressed directly from your device using your API key. Their privacy policy applies to those requests.</li>
+          </ul>
+          <p>
+            File13 has no other third-party data processors. There is no CDN
+            for analytics, no error-reporting service, no marketing automation.
+          </p>
+
+          <h2 id="retention">11. Retention</h2>
+          <p>
+            Local data lives for as long as the application is installed and
+            the account is connected. Disconnecting an account removes its
+            cached headers and per-account state. Deleting the application
+            removes the local data store; Keychain items follow standard
+            Apple behavior for app removal. iCloud KV-Store entries can be
+            cleared from Settings → General → “Clear iCloud sync data”.
+          </p>
+
+          <h2 id="rights">12. Your rights (GDPR, CCPA, and similar laws)</h2>
+          <p>
+            Because File13 does not collect personal data on its own
+            servers, most data-subject rights are exercised directly on your
+            device:
+          </p>
+          <ul>
+            <li><strong>Access.</strong> Open the app. Everything File13 knows is visible in the UI.</li>
+            <li><strong>Portability.</strong> Use the CLI's <code>file13 export</code> command to dump your rules, categories, and VIPs.</li>
+            <li><strong>Erasure.</strong> Delete the application, or disconnect the account.</li>
+            <li><strong>Objection.</strong> Disable any optional feature in Settings.</li>
+          </ul>
+          <p>
+            If you have a question about these rights that you cannot
+            answer by inspecting the app, you may write to
+            <a href="mailto:dev@snxt.ai">dev@snxt.ai</a>. The
+            developer reads every message but makes no commitment to a
+            response timeline; see the <a href="support.html">support
+            page</a> for the full as-is posture.
+          </p>
+
+          <h2 id="children">13. Children</h2>
+          <p>
+            File13 is not directed at children under 13 and is rated 4+
+            on the App Store for content reasons only. The developer does
+            not knowingly collect data from children.
+          </p>
+
+          <h2 id="changes">14. Changes</h2>
+          <p>
+            Material changes to this policy will be announced in-app and
+            on this page at least 30 days before they take effect. The
+            effective date and version number above always reflect the
+            current policy.
+          </p>
+
+          <h2 id="contact">15. Contact</h2>
+          <p>
+            <strong>Shawn M. Brown</strong>, individual developer.<br>
+            All correspondence: <a href="mailto:dev@snxt.ai">dev@snxt.ai</a>.
+          </p>
+
+        </article>
+      </div>
+    </div>
+  </main>
+
+  <footer class="site">
+    <div class="wrap">
+      <div class="col">
+        <a class="brand" href="index.html" style="margin-bottom:14px"><span class="brand-mark">F</span><span>File13</span></a>
+        <p style="color:var(--fg-3); font-size:var(--fs-13); max-width:36ch; margin:0">An inbox triage instrument. Metadata only, local processing, one-time purchase.</p>
+      </div>
+      <div class="col"><h4>Product</h4><ul><li><a href="index.html#features">Features</a></li><li><a href="cli.html">Command line</a></li><li><a href="ai.html">AI processing</a></li><li><a href="support.html">Support</a></li></ul></div>
+      <div class="col"><h4>Trust</h4><ul><li><a href="privacy.html">Privacy policy</a></li><li><a href="security.html">Security</a></li><li><a href="opensource.html">Acknowledgments</a></li></ul></div>
+      <div class="col"><h4>Legal</h4><ul><li><a href="license.html">License (MIT)</a></li><li><a href="mailto:dev@snxt.ai">dev@snxt.ai</a></li></ul></div>
+      <div class="legal" style="grid-column: 1 / -1"><span>© 2026 Shawn M. Brown.</span><span>Mac App Store and the Apple logo are trademarks of Apple Inc.</span></div>
+    </div>
+  </footer>
+
+</div>
+</body>
+</html>

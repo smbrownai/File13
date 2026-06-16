@@ -1,0 +1,22 @@
+# macOS
+.DS_Store
+
+# Xcode
+xcuserdata/
+*.xcuserstate
+*.xcuserdatad/
+
+# SwiftPM artifacts (workspace-level)
+.swiftpm/
+.build/
+Package.resolved.lock
+
+# Build output
+build/
+DerivedData/
+
+# File13-specific: local IDE noise we don't want to track
+*.xcscheme.user
+
+# git worktrees managed by Claude Code's harness
+.claude/

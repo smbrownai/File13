@@ -1,0 +1,124 @@
+import Foundation
+import NIO
+import NIOIMAPCore
+import Testing
+@testable import SwiftMail
+
+@Suite(.serialized, .timeLimit(.minutes(1)))
+struct IMAPNamedConnectionTests {
+    private func makeConnection(name: String = "test", authenticate: @escaping @Sendable (IMAPConnection) async throws -> Void = { _ in }) -> IMAPNamedConnection {
+        let group = MultiThreadedEventLoopGroup(numberOfThreads: 1)
+        let connection = IMAPConnection(
+            host: "localhost",
+            port: 1,
+            useTLS: false,
+            group: group,
+            loggerLabel: "test.imap",
+            outboundLabel: "test.imap.out",
+            inboundLabel: "test.imap.in",
+            connectionID: "test-\(name)",
+            connectionRole: "test"
+        )
+        return IMAPNamedConnection(name: name, connection: connection, authenticateOnConnection: authenticate)
+    }
+
+    @Test
+    func lastActivityIsNilBeforeAnyCommands() async {
+        let named = makeConnection()
+        let activity = await named.lastActivity
+        #expect(activity == nil)
+    }
+
+    @Test
+    func lastActivityRemainsNilAfterFailedCommand() async {
+        // Authentication closure throws before executeCommand reaches the
+        // underlying connection, so lastActivity must stay nil and no transport
+        // should be opened.
+        let named = makeConnection(authenticate: { _ in
+            throw IMAPError.authFailed("auth error")
+        })
+
+        do {
+            _ = try await named.noop()
+        } catch {
+            // expected – authentication throws before any command reaches the server
+        }
+
+        let activity = await named.lastActivity
+        #expect(activity == nil)
+    }
+
+    @Test
+    func uidExpungeRequiresUIDPlusCapability() async {
+        let group = MultiThreadedEventLoopGroup(numberOfThreads: 1)
+        defer {
+            Task {
+                try? await group.shutdownGracefully()
+            }
+        }
+
+        let connection = IMAPConnection(
+            host: "localhost",
+            port: 1,
+            useTLS: false,
+            group: group,
+            loggerLabel: "test.imap",
+            outboundLabel: "test.imap.out",
+            inboundLabel: "test.imap.in",
+            connectionID: "test-uidexpunge",
+            connectionRole: "test"
+        )
+        connection.replaceCapabilitiesForTesting([])
+        let named = IMAPNamedConnection(name: "test", connection: connection, authenticateOnConnection: { _ in })
+
+        do {
+            try await named.expunge(messages: UIDSet(UID(7)))
+            Issue.record("Expected UID EXPUNGE to require UIDPLUS")
+        } catch let error as IMAPError {
+            guard case .commandNotSupported(let message) = error else {
+                Issue.record("Expected commandNotSupported, got \(error)")
+                return
+            }
+            #expect(message == "UID EXPUNGE command not supported by server")
+        } catch {
+            Issue.record("Expected IMAPError.commandNotSupported, got \(error)")
+        }
+    }
+
+    @Test
+    func sortedSearchRequiresSortCapability() async {
+        let group = MultiThreadedEventLoopGroup(numberOfThreads: 1)
+        defer {
+            Task {
+                try? await group.shutdownGracefully()
+            }
+        }
+
+        let connection = IMAPConnection(
+            host: "localhost",
+            port: 1,
+            useTLS: false,
+            group: group,
+            loggerLabel: "test.imap",
+            outboundLabel: "test.imap.out",
+            inboundLabel: "test.imap.in",
+            connectionID: "test-sort-capability",
+            connectionRole: "test"
+        )
+        connection.replaceCapabilitiesForTesting([])
+        let named = IMAPNamedConnection(name: "test", connection: connection, authenticateOnConnection: { _ in })
+
+        do {
+            _ = try await named.extendedSearch(criteria: [.all], sortCriteria: [.descending(.date)]) as ExtendedSearchResult<SwiftMail.UID>
+            Issue.record("Expected SORT to require server support")
+        } catch let error as IMAPError {
+            guard case .commandNotSupported(let message) = error else {
+                Issue.record("Expected commandNotSupported, got \(error)")
+                return
+            }
+            #expect(message == "SORT command not supported by server")
+        } catch {
+            Issue.record("Expected IMAPError.commandNotSupported, got \(error)")
+        }
+    }
+}

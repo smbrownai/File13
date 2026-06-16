@@ -1,0 +1,35 @@
+{
+  "appPolicies" : {
+    "eula" : "",
+    "policies" : []
+  },
+  "identifier" : "DD7D8EFB",
+  "nonRenewingSubscriptions" : [],
+  "products" : [
+    {
+      "displayPrice" : "14.99",
+      "familyShareable" : true,
+      "internalID" : "85F8E1DE",
+      "localizations" : [
+        {
+          "description" : "Connect unlimited mailboxes across Mac, iPhone, and iPad. One purchase, no subscription.",
+          "displayName" : "File13 Pro",
+          "locale" : "en_US"
+        }
+      ],
+      "productID" : "com.shawnbrown.file13.pro",
+      "referenceName" : "File13 Pro",
+      "type" : "NonConsumable"
+    }
+  ],
+  "settings" : {
+    "_storeKitErrors" : [],
+    "_failTransactionsEnabled" : false,
+    "_transactionLog" : []
+  },
+  "subscriptionGroups" : [],
+  "version" : {
+    "major" : 4,
+    "minor" : 0
+  }
+}

@@ -1,0 +1,225 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>AI processing · File13</title>
+  <meta name="description" content="How File13 uses AI to assist with sender categorization and triage suggestions, what is sent to each provider, and why every feature is optional." />
+  <link rel="icon" href="assets/logo/favicon.svg" />
+  <link rel="stylesheet" href="colors_and_type.css" />
+  <link rel="stylesheet" href="site.css" />
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js" defer></script>
+</head>
+<body>
+<div class="page">
+
+  <header class="topbar">
+    <div class="topbar-inner">
+      <a class="brand" href="index.html"><span class="brand-mark">F</span><span>File13</span></a>
+      <nav class="nav">
+        <a href="index.html#features">Features</a>
+        <a href="privacy.html">Privacy</a>
+        <a href="cli.html">CLI</a>
+        <a href="ai.html" class="current">AI</a>
+        <a href="support.html">Support</a>
+        <span class="sep"></span>
+        <a class="btn btn-primary btn-sm" href="index.html#download">Download</a>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <div class="wrap">
+      <div class="page-header">
+        <span class="eyebrow">Trust</span>
+        <h1>AI-assisted features</h1>
+        <p class="lede">
+          File13 uses language models for three narrow jobs: categorizing
+          senders, advising on individual senders, and proposing rules. Every
+          job is optional, every job runs against metadata only, and the
+          default provider is on-device.
+        </p>
+        <div class="meta"><span>Updated 2026-05-13</span><span>·</span><span>Application version 1.0</span></div>
+      </div>
+
+      <article class="prose" style="max-width:72ch">
+
+        <h2 id="philosophy">A short statement of philosophy</h2>
+        <p>
+          A model that has never seen an email body is a useful collaborator
+          for triage. It is not making editorial decisions about your mail;
+          it is helping you sort envelopes faster. File13 uses AI only
+          where this framing holds.
+        </p>
+        <p>
+          You will not find a “summarize my inbox” feature here, because
+          summarizing inboxes requires reading bodies, which File13 does
+          not do. You will not find an auto-reply feature, because File13
+          has no SMTP. You will find features that help you decide what to
+          do with a sender.
+        </p>
+
+        <h2 id="features">The three AI features</h2>
+
+        <h3>Sender categorization</h3>
+        <p>
+          File13 can ask a model to label each sender with one of a small
+          set of categories: <em>personal</em>, <em>work</em>,
+          <em>newsletter</em>, <em>promotional</em>, <em>transactional</em>,
+          <em>notifications</em>, <em>social</em>, <em>news</em>,
+          <em>other</em>. Categories are stored locally and feed into the
+          rules engine and the rule suggester. Senders are categorized in
+          batches of roughly 25.
+        </p>
+
+        <h3>Per-sender advice</h3>
+        <p>
+          For one sender at a time, the model is shown the sender's recent
+          metadata and asked for a short triage recommendation: keep,
+          unsubscribe, archive-and-rule, or delete-and-rule. Advice appears
+          inline next to the sender; it is never acted on automatically.
+        </p>
+
+        <h3>Rule suggestions</h3>
+        <p>
+          File13 can propose rules in two modes. <strong>Bulk</strong>: from a
+          pool of high-volume and low-engagement senders (VIPs are filtered
+          out of the prompt entirely), the model proposes a handful of rules.
+          <strong>Per-sender</strong>: drilling into one sender, with more
+          context. Both modes feed the model <code>replies=N</code> and a
+          <code>VIP</code> signal so the system prompt's “never propose
+          destructive actions on VIPs or replied-to senders” instruction has
+          data to lean on.
+        </p>
+
+        <h2 id="vip-detection">A note on VIP detection</h2>
+        <p>
+          VIP detection is <strong>not</strong> an AI feature. It is a
+          deterministic heuristic. A sender becomes a VIP when:
+        </p>
+        <ul>
+          <li>you have replied at least twice (reply-path); or</li>
+          <li>your read rate for that sender is 90%+ across at least 5 messages (read-rate fallback).</li>
+        </ul>
+        <p>
+          Senders in newsletter, promotional, notifications, or social
+          categories are disqualified regardless. This is intentional — VIP
+          status protects the inbox from destructive bulk actions, and the
+          decision should be auditable without a model in the loop.
+        </p>
+
+        <h2 id="what-is-sent">What is sent to a model</h2>
+        <p>
+          For each feature, the request contains a system prompt
+          (instructions and constraints) and a user payload built from
+          metadata that File13 already has locally. The full set of fields
+          that can appear in any payload:
+        </p>
+        <ul>
+          <li><code>From</code> address and display name</li>
+          <li><code>Subject</code></li>
+          <li><code>Date</code></li>
+          <li><code>List-Id</code> and <code>List-Unsubscribe</code></li>
+          <li>Flags: <code>seen</code>, <code>answered</code>, <code>flagged</code></li>
+          <li>Per-sender aggregates: total count, read rate, reply count, last seen date</li>
+          <li>A boolean VIP flag</li>
+        </ul>
+        <p>
+          What is <strong>not</strong> in any payload: message bodies (they
+          do not exist locally), attachments, embedded images, links,
+          contacts, calendar, location, system identifiers, or anything
+          outside the connected mailboxes.
+        </p>
+
+        <h2 id="providers">Providers</h2>
+
+        <h3>Apple Foundation Models — the default</h3>
+        <p>
+          File13's default provider is Apple's on-device language model,
+          accessed through the Foundation Models framework. Small requests
+          run on-device. Larger requests route to <strong>Private Cloud
+          Compute</strong>, Apple's verifiable cloud inference environment.
+          Either way, your metadata does not cross Apple's privacy
+          boundary and is not visible to the developer. This is the
+          recommended configuration for everyone, and the one most users
+          should never change.
+        </p>
+
+        <h3>External providers — optional, with your own key</h3>
+        <p>
+          If you prefer, you can configure Anthropic, OpenAI, Google, or
+          Perplexity as a provider. You enter the API key in Settings → AI;
+          it is stored in the system Keychain alongside your IMAP
+          credentials. Requests then flow directly from your device to the
+          provider's API. File13 has no inference server of its own and
+          does not mediate, log, or sample these requests.
+        </p>
+        <p>
+          When you use an external provider, that provider's privacy policy
+          governs the request. We recommend reviewing it before enabling.
+          File13's documentation links to each.
+        </p>
+
+        <h2 id="limits">Limitations to be honest about</h2>
+        <ul>
+          <li><strong>Categorization is imperfect.</strong> A model that sees only headers and counts will mis-categorize some senders, especially small businesses and one-person newsletters. You can recategorize any sender manually; your override is sticky.</li>
+          <li><strong>Suggestions are not policy.</strong> A “delete all from this sender” suggestion is a starting point, not a decision. File13 never executes a suggestion on its own.</li>
+          <li><strong>Models change.</strong> Provider models are updated by their providers. Output can shift between calls even with identical inputs. Treat AI output as a draft.</li>
+          <li><strong>Throughput varies.</strong> On-device models are slower for batch categorization than cloud models, but private. Cloud models are faster but cost money and leave the device. Choose the tradeoff that fits.</li>
+        </ul>
+
+        <h2 id="responsibility">Your responsibility</h2>
+        <div class="callout warn">
+          <div class="label">Notice</div>
+          <p>
+            AI suggestions are advisory. You remain responsible for every
+            action you take in your mailbox. File13 provides confirmation
+            prompts, a buffered undo window, and VIP and transactional
+            protections; these are aids, not guarantees. Maintain backups of
+            anything you cannot afford to lose. The software is provided
+            without warranty; see the <a href="license.html">License</a>.
+          </p>
+        </div>
+
+        <h2 id="off">Using AI as little as you want</h2>
+        <p>
+          AI features are opt-in by design. The only AI behavior that runs
+          automatically is post-refresh categorization, which has a toggle
+          in Settings → AI. Every other AI feature — per-sender insights,
+          rule suggestions, manual recategorize — runs only when you press
+          the button for it. File13 never invokes the model on your
+          behalf.
+        </p>
+        <p>
+          The default provider is Apple Foundation Models, which runs
+          on-device (or, on overflow, via Apple Private Cloud Compute).
+          That means the out-of-the-box state is: no third-party network
+          traffic for AI, ever, until you explicitly switch providers.
+        </p>
+        <p>
+          If you want AI effectively off, the recipe is two checkboxes:
+          keep the provider set to Apple, and turn off
+          <em>auto-categorize new senders after refresh</em>. From there,
+          File13 runs as a pure header-triage tool — sender groupings,
+          subject clusters, manual rules, VIPs (still deterministic),
+          unsubscribe workflows, and bulk actions all remain. The model is
+          a useful collaborator, not a load-bearing dependency.
+        </p>
+
+      </article>
+    </div>
+  </main>
+
+  <footer class="site">
+    <div class="wrap">
+      <div class="col"><a class="brand" href="index.html" style="margin-bottom:14px"><span class="brand-mark">F</span><span>File13</span></a><p style="color:var(--fg-3); font-size:var(--fs-13); max-width:36ch; margin:0">An inbox triage instrument. Metadata only, local processing, one-time purchase.</p></div>
+      <div class="col"><h4>Product</h4><ul><li><a href="index.html#features">Features</a></li><li><a href="cli.html">Command line</a></li><li><a href="ai.html">AI processing</a></li><li><a href="support.html">Support</a></li></ul></div>
+      <div class="col"><h4>Trust</h4><ul><li><a href="privacy.html">Privacy policy</a></li><li><a href="security.html">Security</a></li><li><a href="opensource.html">Acknowledgments</a></li></ul></div>
+      <div class="col"><h4>Legal</h4><ul><li><a href="license.html">License (MIT)</a></li><li><a href="mailto:dev@snxt.ai">dev@snxt.ai</a></li></ul></div>
+      <div class="legal" style="grid-column: 1 / -1"><span>© 2026 Shawn M. Brown.</span><span>Mac App Store and the Apple logo are trademarks of Apple Inc.</span></div>
+    </div>
+  </footer>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,175 @@
+# Build, sign, notarize, and publish the `file13` CLI as a GitHub
+# Release asset. Triggered by pushing a tag named `cli-v<semver>` (e.g.
+# `cli-v0.2.0`) so CLI releases are independent of GUI app releases.
+#
+# Required repo secrets:
+#   APPLE_DEVELOPER_ID_CERT_P12      base64-encoded .p12 of the "Developer ID
+#                                    Application" certificate
+#   APPLE_DEVELOPER_ID_CERT_PASSWORD password for the .p12 above
+#   APPLE_ID                         the Apple ID email used for notarization
+#   APPLE_TEAM_ID                    YRB6VBTSRV (could be hardcoded but kept as
+#                                    a secret so forks can swap in their own)
+#   APPLE_APP_SPECIFIC_PASSWORD      app-specific password generated at
+#                                    appleid.apple.com (NOT the Apple ID
+#                                    password itself)
+#   GITHUB_TOKEN                     auto-provided by Actions; used to attach
+#                                    the artifact to the Release
+#
+# The signing keychain lives in a temp file and is destroyed at the end of
+# the run; nothing about the certificate persists between jobs.
+
+name: release-cli
+
+on:
+  push:
+    tags:
+      - 'cli-v*'
+
+# No `permissions:` block needed at the workflow level. The release
+# step publishes to the **tap repo** (smbrownai/homebrew-file13), not
+# this source repo, and uses HOMEBREW_TAP_TOKEN (a fine-grained PAT
+# scoped to the tap repo's Contents) rather than the default
+# GITHUB_TOKEN. Cross-repo writes can't go through GITHUB_TOKEN at all
+# — its scope is fixed to the repo running the workflow — so the PAT
+# carries all the auth, and the default token's permissions on this
+# repo are unused. Keeping it implicit-read-only is the right
+# least-privilege posture.
+jobs:
+  build:
+    # macos-15+ runners ship Xcode 16+, the toolchain target for the CLI's
+    # macOS 26 deployment target. Pinned to the latest macOS image so SDK
+    # mismatches don't cause silent target drift.
+    runs-on: macos-15
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Resolve version from tag
+        id: ver
+        # `cli-v0.2.0` -> `0.2.0`. release.sh validates that the binary's
+        # self-reported version matches; bump file13Version in
+        # cli/Sources/file13/File13.swift before tagging.
+        run: |
+          tag="${GITHUB_REF#refs/tags/}"
+          version="${tag#cli-v}"
+          echo "tag=$tag"          >> "$GITHUB_OUTPUT"
+          echo "version=$version"  >> "$GITHUB_OUTPUT"
+
+      - name: Select Xcode
+        # cli/Package.swift and File13Core/Package.swift declare
+        # swift-tools-version: 6.2, which ships with Xcode 26. The
+        # macos-15 runner has historically capped at Xcode 16.x
+        # (Swift 6.1.2). Glob broadly so if/when GitHub adds a newer
+        # Xcode to the image we pick it up automatically.
+        #
+        # Logs all installed Xcodes before selecting so a future
+        # mismatch is one log line away from diagnosis.
+        run: |
+          set -euo pipefail
+          echo "Installed Xcodes:"
+          ls -d /Applications/Xcode*.app 2>/dev/null || echo "  (none found)"
+          # `sort -V` so 26 > 16.10 > 16.9 numerically.
+          xcode_path=$(ls -d /Applications/Xcode*.app 2>/dev/null \
+            | sort -V \
+            | tail -n 1)
+          if [ -z "$xcode_path" ]; then
+            echo "::error::no Xcode*.app found on this runner"
+            exit 1
+          fi
+          echo "Using $xcode_path"
+          sudo xcode-select -s "$xcode_path"
+          # Sanity: print the resolved swift version so the log shows
+          # what we actually got.
+          xcrun swift --version
+
+      - name: Import Developer ID signing certificate
+        # Hand-rolling `base64 --decode | security import` is fragile — macOS
+        # `base64` line-wraps by default, GitHub secret round-tripping doesn't
+        # always preserve whitespace, and the `security import` parameter
+        # validation reports the same -50 error for several distinct failure
+        # modes. The maintained Apple-Actions helper takes the raw base64 +
+        # password, decodes them in a way that survives wrapping, creates an
+        # ephemeral keychain, unlocks it, sets it as the default search
+        # keychain for follow-on steps, and runs `set-key-partition-list` so
+        # codesign can use the key without prompting.
+        uses: apple-actions/import-codesign-certs@v3
+        with:
+          p12-file-base64: ${{ secrets.APPLE_DEVELOPER_ID_CERT_P12 }}
+          p12-password: ${{ secrets.APPLE_DEVELOPER_ID_CERT_PASSWORD }}
+
+      - name: Store notarytool credentials
+        env:
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+        # release.sh expects a `file13-notary` keychain profile to exist;
+        # this is the headless equivalent of the developer's local
+        # `xcrun notarytool store-credentials` setup.
+        run: |
+          xcrun notarytool store-credentials file13-notary \
+            --apple-id "$APPLE_ID" \
+            --team-id "$APPLE_TEAM_ID" \
+            --password "$APPLE_APP_SPECIFIC_PASSWORD"
+
+      - name: Build, sign, and notarize
+        env:
+          DEVELOPER_ID: "Developer ID Application: Shawn Brown (${{ secrets.APPLE_TEAM_ID }})"
+          NOTARY_PROFILE: file13-notary
+        # release.sh writes the archive into cli/.build/dist/ and prints
+        # the SHA-256 and formula stanza we need for the next steps.
+        run: |
+          cli/Scripts/release.sh "${{ steps.ver.outputs.version }}"
+
+      - name: Locate artifacts
+        id: artifacts
+        run: |
+          version="${{ steps.ver.outputs.version }}"
+          archive="cli/.build/dist/file13-${version}-arm64-macos.zip"
+          if [[ ! -f "$archive" ]]; then
+            echo "::error::expected artifact not found at $archive"
+            ls -la cli/.build/dist || true
+            exit 1
+          fi
+          sha=$(shasum -a 256 "$archive" | awk '{print $1}')
+          echo "archive=$archive" >> "$GITHUB_OUTPUT"
+          echo "sha256=$sha"      >> "$GITHUB_OUTPUT"
+
+      - name: Publish GitHub Release
+        # Publishes to the **public tap repo** (smbrownai/homebrew-file13),
+        # not this source repo. Reason: smbrownai/File13 is private, so
+        # release-asset URLs there 404 for the unauthenticated `curl` that
+        # Homebrew uses to download. The tap repo is public by definition
+        # (Homebrew taps must be), so anonymous fetches work there.
+        #
+        # Requires the HOMEBREW_TAP_TOKEN secret: a fine-grained PAT with
+        # `Contents: Read and write` scoped to smbrownai/homebrew-file13
+        # only. The default GITHUB_TOKEN can't write across repos.
+        uses: softprops/action-gh-release@v2
+        with:
+          repository: smbrownai/homebrew-file13
+          token: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+          tag_name: ${{ steps.ver.outputs.tag }}
+          name: "file13 CLI ${{ steps.ver.outputs.version }}"
+          body: |
+            File13 CLI **${{ steps.ver.outputs.version }}** — Apple Developer ID-signed and notarized.
+
+            ## Install via Homebrew
+
+            ```sh
+            brew install smbrownai/file13/file13
+            ```
+
+            ## Formula stanza
+
+            Paste into [`Formula/file13.rb`](../../blob/main/Formula/file13.rb):
+
+            ```ruby
+            url    "https://github.com/smbrownai/homebrew-file13/releases/download/${{ steps.ver.outputs.tag }}/file13-${{ steps.ver.outputs.version }}-arm64-macos.zip"
+            sha256 "${{ steps.artifacts.outputs.sha256 }}"
+            version "${{ steps.ver.outputs.version }}"
+            ```
+          files: |
+            ${{ steps.artifacts.outputs.archive }}
+          fail_on_unmatched_files: true
+

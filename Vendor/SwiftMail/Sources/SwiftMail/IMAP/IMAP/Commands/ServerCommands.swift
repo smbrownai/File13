@@ -1,0 +1,150 @@
+// ServerCommands.swift
+// Commands related to IMAP server operations
+
+import Foundation
+import NIO
+import NIOIMAP
+
+/// Command for retrieving server capabilities
+struct CapabilityCommand: IMAPTaggedCommand {
+	typealias ResultType = [Capability]
+	typealias HandlerType = CapabilityHandler
+    
+    /// Convert to an IMAP tagged command
+    /// - Parameter tag: The command tag
+    /// - Returns: A TaggedCommand ready to be sent to the server
+    func toTaggedCommand(tag: String) -> TaggedCommand {
+        return TaggedCommand(tag: tag, command: .capability)
+    }
+}
+
+/// Command for copying messages from one mailbox to another
+struct CopyCommand<T: MessageIdentifier>: IMAPTaggedCommand {
+    typealias ResultType = Void
+    typealias HandlerType = CopyHandler
+
+    /// The set of message identifiers to copy
+    let identifierSet: MessageIdentifierSet<T>
+
+    /// The destination mailbox name
+    let destinationMailbox: String
+
+    /// Same reasoning as MoveCommand: COPY of a large or bursty selection
+    /// regularly takes longer than the protocol-default 5s on Gmail and
+    /// similar providers. Bump to 30s to match SELECT/STATUS/LIST.
+    var timeoutSeconds: Int { 30 }
+
+    /// Initialize a new copy command
+    /// - Parameters:
+    ///   - identifierSet: The set of message identifiers to copy
+    ///   - destinationMailbox: The destination mailbox name
+    init(identifierSet: MessageIdentifierSet<T>, destinationMailbox: String) {
+        self.identifierSet = identifierSet
+        self.destinationMailbox = destinationMailbox
+    }
+    
+    /// Validate the command before execution
+    func validate() throws {
+        guard !identifierSet.isEmpty else {
+            throw IMAPError.emptyIdentifierSet
+        }
+    }
+    
+    /// Convert to an IMAP tagged command
+    /// - Parameter tag: The command tag
+    /// - Returns: A TaggedCommand ready to be sent to the server
+    func toTaggedCommand(tag: String) -> TaggedCommand {
+        let mailbox = MailboxName(ByteBuffer(string: destinationMailbox))
+        
+        if T.self == UID.self {
+            return TaggedCommand(tag: tag, command: .uidCopy(.set(identifierSet.toNIOSet()), mailbox))
+        } else {
+            return TaggedCommand(tag: tag, command: .copy(.set(identifierSet.toNIOSet()), mailbox))
+        }
+    }
+}
+
+/// Command for storing flags on messages
+struct StoreCommand<T: MessageIdentifier>: IMAPTaggedCommand {
+    typealias ResultType = Void
+    typealias HandlerType = StoreHandler
+
+    /// The set of message identifiers to update
+    let identifierSet: MessageIdentifierSet<T>
+
+    /// The data to store
+    let data: StoreData
+
+    /// STORE `\Deleted` on a large `1:*` set (Empty Trash) or a long UID
+    /// list can take longer than 5s on Gmail. Match the destructive-op
+    /// budget granted to MOVE/COPY/EXPUNGE.
+    var timeoutSeconds: Int { 30 }
+
+    /// Initialize a new store command
+    /// - Parameters:
+    ///   - identifierSet: The set of message identifiers to update
+    ///   - data: The data to store
+    init(identifierSet: MessageIdentifierSet<T>, data: StoreData) {
+        self.identifierSet = identifierSet
+        self.data = data
+    }
+    
+    /// Validate the command before execution
+    func validate() throws {
+        guard !identifierSet.isEmpty else {
+            throw IMAPError.emptyIdentifierSet
+        }
+    }
+    
+    /// Convert to an IMAP tagged command
+    /// - Parameter tag: The command tag
+    /// - Returns: A TaggedCommand ready to be sent to the server
+    func toTaggedCommand(tag: String) -> TaggedCommand {
+        if T.self == UID.self {
+            return TaggedCommand(tag: tag, command: .uidStore(.set(identifierSet.toNIOSet()), [], data.toNIO()))
+        } else {
+            return TaggedCommand(tag: tag, command: .store(.set(identifierSet.toNIOSet()), [], data.toNIO()))
+        }
+    }
+}
+
+/// Command for expunging deleted messages
+struct ExpungeCommand: IMAPTaggedCommand {
+    typealias ResultType = Void
+    typealias HandlerType = ExpungeHandler
+
+    /// EXPUNGE on a large mailbox (Empty Trash on ~thousands of messages)
+    /// can take much longer than the 5s default.
+    var timeoutSeconds: Int { 60 }
+
+    /// Convert to an IMAP tagged command
+    /// - Parameter tag: The command tag
+    /// - Returns: A TaggedCommand ready to be sent to the server
+    func toTaggedCommand(tag: String) -> TaggedCommand {
+        return TaggedCommand(tag: tag, command: .expunge)
+    }
+}
+
+/// Command for expunging specific deleted messages by UID.
+struct UIDExpungeCommand: IMAPTaggedCommand {
+    typealias ResultType = Void
+    typealias HandlerType = ExpungeHandler
+
+    let identifierSet: UIDSet
+
+    var timeoutSeconds: Int { 60 }
+
+    init(identifierSet: UIDSet) {
+        self.identifierSet = identifierSet
+    }
+
+    func validate() throws {
+        guard !identifierSet.isEmpty else {
+            throw IMAPError.emptyIdentifierSet
+        }
+    }
+
+    func toTaggedCommand(tag: String) -> TaggedCommand {
+        TaggedCommand(tag: tag, command: .uidExpunge(.set(identifierSet.toNIOSet())))
+    }
+}
