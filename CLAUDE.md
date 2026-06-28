@@ -69,7 +69,7 @@ UI tests use plain XCTest and only contain a launch-performance benchmark.
   with `Error Code=-413 "No matching profile found"`. The CLI works
   around this:
     - **App Group container**
-      (`~/Library/Group Containers/group.com.shawnbrown.file13/`) is
+      (`~/Library/Group Containers/group.com.shawnbrown.File13/`) is
       reachable as a plain filesystem path. Any user-owned process can
       read/write the directory tree without needing the entitlement,
       so settings, accounts, rules, replied-message tracking, and the
@@ -80,7 +80,7 @@ UI tests use plain XCTest and only contain a launch-performance benchmark.
     - **Keychain entries** are the one thing that can't cross. The
       CLI manages its own entries in the default user keychain (no
       access group); the GUI's entries live in the
-      `YRB6VBTSRV.com.shawnbrown.file13` access group. Re-add
+      `YRB6VBTSRV.com.shawnbrown.File13` access group. Re-add
       accounts on the CLI side via `file13 accounts add` to enter
       passwords separately. The InstallCLIView calls this out so
       users know to expect it.

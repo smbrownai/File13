@@ -39,7 +39,7 @@ final class File13AppDelegate: NSObject, NSApplicationDelegate {
     var cloudMirror: CloudKVSyncMirror?
 
     private static let log = Logger(
-        subsystem: "com.shawnbrown.file13",
+        subsystem: "com.shawnbrown.File13",
         category: "ShutdownHooks"
     )
 

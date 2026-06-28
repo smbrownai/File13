@@ -10,13 +10,13 @@ enum LaunchdInterval: String {
 
 /// LaunchAgent helper for `file13 rules schedule install/remove/status`.
 ///
-/// Writes a plist to `~/Library/LaunchAgents/com.shawnbrown.file13.rules.plist` and
+/// Writes a plist to `~/Library/LaunchAgents/com.shawnbrown.File13.rules.plist` and
 /// drives `launchctl bootstrap|bootout|print` to load/unload it. The agent runs as
 /// the current user (not root), which is what we want — it inherits Keychain access
 /// and the App Group container the same way a hand-typed CLI invocation does.
 @MainActor
 enum LaunchdAgent {
-    static let agentLabel = "com.shawnbrown.file13.rules"
+    static let agentLabel = "com.shawnbrown.File13.rules"
 
     /// Path to the per-user LaunchAgent plist.
     static var plistURL: URL {

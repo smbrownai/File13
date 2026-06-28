@@ -4,7 +4,7 @@ import Foundation
 ///
 /// File13's GUI app and the headless `file13` CLI both need to see the same accounts,
 /// settings, rules, and AI tuning. The mechanism is the App Group shared container —
-/// `UserDefaults(suiteName: "group.com.shawnbrown.file13")` resolves to the same plist
+/// `UserDefaults(suiteName: "group.com.shawnbrown.File13")` resolves to the same plist
 /// file inside `~/Library/Group Containers/<group>/` for any binary that holds the entitlement.
 ///
 /// On macOS the suite is created lazily on first write. We pin a single instance here so we
@@ -14,7 +14,7 @@ public enum SharedDefaults {
     /// App Group identifier — must match the entitlement on both binaries (case-sensitive).
     /// Compile-time constant; nonisolated so non-main-actor callers (CLI doctor checks,
     /// command-line plumbing) can read it without hopping actors.
-    public nonisolated static let appGroupId = "group.com.shawnbrown.file13"
+    public nonisolated static let appGroupId = "group.com.shawnbrown.File13"
 
     /// The shared suite. File-backed: both the GUI app and the Homebrew
     /// CLI read and write the same plist file at the App Group container

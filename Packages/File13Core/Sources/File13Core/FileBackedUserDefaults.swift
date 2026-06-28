@@ -167,7 +167,7 @@ public final class FileBackedUserDefaults: UserDefaults, @unchecked Sendable {
     }
 
     private static let log = Logger(
-        subsystem: "com.shawnbrown.file13",
+        subsystem: "com.shawnbrown.File13",
         category: "FileBackedUserDefaults"
     )
 

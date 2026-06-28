@@ -3,7 +3,7 @@
 <plist version="1.0">
 <dict>
 	<key>com.apple.developer.ubiquity-kvstore-identifier</key>
-	<string>$(TeamIdentifierPrefix)com.shawnbrown.file13</string>
+	<string>$(TeamIdentifierPrefix)com.shawnbrown.File13</string>
 	<key>com.apple.security.app-sandbox</key>
 	<true/>
 	<key>com.apple.security.application-groups</key>
@@ -14,8 +14,8 @@
 	<true/>
 	<key>keychain-access-groups</key>
 	<array>
-		<string>$(AppIdentifierPrefix)com.shawnbrown.file13</string>
-		<string>$(AppIdentifierPrefix)com.shawnbrown.file13.shared</string>
+		<string>$(AppIdentifierPrefix)com.shawnbrown.File13</string>
+		<string>$(AppIdentifierPrefix)com.shawnbrown.File13.shared</string>
 	</array>
 </dict>
 </plist>

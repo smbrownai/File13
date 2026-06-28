@@ -2,7 +2,7 @@ import Foundation
 import Security
 
 public enum KeychainStore {
-    public static let service = "com.shawnbrown.file13"
+    public static let service = "com.shawnbrown.File13"
 
     public enum KeychainError: Error {
         case unhandled(OSStatus)

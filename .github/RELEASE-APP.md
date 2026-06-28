@@ -15,8 +15,8 @@ gates the release; nothing here is safe to fully script.
 | Thing | Value |
 |---|---|
 | Team ID | `YRB6VBTSRV` |
-| macOS bundle id | `com.shawnbrown.file13` |
-| iOS bundle id | `com.shawnbrown.file13` (same → Universal Purchase) |
+| macOS bundle id | `com.shawnbrown.File13` |
+| iOS bundle id | `com.shawnbrown.File13` (same → Universal Purchase) |
 | IAP product id | `com.shawnbrown.file13.pro` |
 | IAP type / price | Non-Consumable / $14.99 (one-time) |
 | Marketing version | `1.0` (`MARKETING_VERSION`) |
@@ -37,7 +37,7 @@ gates the release; nothing here is safe to fully script.
 - [ ] Xcode signed into the Apple ID for the team
       (Xcode → Settings → Accounts), so it can generate distribution
       certs/profiles. This fixes the local
-      `No profiles for 'com.shawnbrown.file13'` build error.
+      `No profiles for 'com.shawnbrown.File13'` build error.
 
 ## 1. Certificates & provisioning (one-time, then reuse)
 
@@ -46,11 +46,11 @@ let it manage the Distribution certificate and "Mac App Store" profile.
 If you sign manually:
 
 - [ ] **Apple Distribution** certificate in your keychain.
-- [ ] **Mac App Store** provisioning profile for `com.shawnbrown.file13`,
+- [ ] **Mac App Store** provisioning profile for `com.shawnbrown.File13`,
       and the **iOS App Store** profile for the same id.
 - [ ] Each profile must carry the app's entitlements: App Group
-      `group.com.shawnbrown.file13`, keychain access groups
-      (`…file13` + `…file13.shared`), and the iCloud KVS identifier. These
+      `group.com.shawnbrown.File13`, keychain access groups
+      (`…File13` + `…File13.shared`), and the iCloud KVS identifier. These
       are defined in `File13/File13.entitlements` /
       `File13iOS/File13-iOS.entitlements`. The App Group, the App ID's
       iCloud (key-value) capability, and the keychain groups must all be
@@ -64,7 +64,7 @@ If you sign manually:
 
 - [ ] Create the app record if it doesn't exist: **My Apps → +** →
       New App. Platform: macOS **and** iOS (one record, both platforms →
-      Universal Purchase). Bundle id `com.shawnbrown.file13`. Primary
+      Universal Purchase). Bundle id `com.shawnbrown.File13`. Primary
       language, SKU, name **File13**.
 - [ ] Set **Category** = Productivity.
 - [ ] Add **Privacy Policy URL** and **Support URL** (the published

@@ -80,10 +80,10 @@ only place SwiftUI lives; everything else is in the package.
 
 State sharing happens through:
 
-- **App Group container** at `~/Library/Group Containers/group.com.shawnbrown.file13/`
+- **App Group container** at `~/Library/Group Containers/group.com.shawnbrown.File13/`
   — UserDefaults suite (settings, accounts, rules, AI tuning), SwiftData
   store (cached headers), lock file. Both binaries hit the same paths.
-- **Default user keychain** at service `com.shawnbrown.file13` — IMAP
+- **Default user keychain** at service `com.shawnbrown.File13` — IMAP
   passwords (account `imap-password-<uuid>`) and AI provider keys (account
   `ai-key-<provider>`). The CLI manages its own entries here separately
   from the GUI; see "Credential separation" below.
@@ -95,7 +95,7 @@ restricted entitlement requiring a provisioning profile that bare CLI
 binaries can't carry. Practical consequence:
 
 - The GUI writes IMAP passwords + AI provider keys with an access-group
-  attribute (`<TeamID>.com.shawnbrown.file13.shared`).
+  attribute (`<TeamID>.com.shawnbrown.File13.shared`).
 - The CLI writes them without an access-group attribute.
 - Each side reads its own entries; they don't share.
 

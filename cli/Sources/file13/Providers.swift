@@ -122,7 +122,7 @@ struct ProvidersCommand: AsyncParsableCommand {
             argv. Pipe it in (`pbpaste | file13 providers set-key anthropic`) for
             scripts; on a TTY the command prompts with echo suppressed.
 
-            Stored in the *default* user keychain at service `com.shawnbrown.file13`,
+            Stored in the *default* user keychain at service `com.shawnbrown.File13`,
             account `ai-key-<provider>`. Not visible to the GUI app's signed copy
             (which writes to the same service+account but with a Keychain Access
             Group claim that the unentitled CLI can't read), so users running both

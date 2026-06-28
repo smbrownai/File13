@@ -8,7 +8,7 @@ import SwiftUI
 /// AppKit accent override, CLI embedding, menu bar commands).
 ///
 /// Universal Purchase: same bundle id as the macOS target
-/// (`com.shawnbrown.file13`), so a Pro purchase from either platform
+/// (`com.shawnbrown.File13`), so a Pro purchase from either platform
 /// satisfies the entitlement check on the other.
 @main
 struct File13iOSApp: App {

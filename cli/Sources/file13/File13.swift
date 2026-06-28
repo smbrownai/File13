@@ -16,7 +16,7 @@ struct File13: AsyncParsableCommand {
         abstract: "Headless companion CLI for File13 — IMAP triage on metadata only.",
         discussion: """
         Shares state with File13.app through the App Group container at
-        ~/Library/Group Containers/group.com.shawnbrown.file13. Settings,
+        ~/Library/Group Containers/group.com.shawnbrown.File13. Settings,
         accounts (without passwords), rules, AI preferences, sender categories,
         VIPs, replied-message tracking, and the Pro license tier flow GUI → CLI
         automatically.

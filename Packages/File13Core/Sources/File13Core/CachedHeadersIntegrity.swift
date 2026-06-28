@@ -14,7 +14,7 @@ import Security
 /// review process gates which apps can request a given group ID. So this
 /// only matters when *another File13-team binary* (a sibling app, a
 /// staging build, a future utility) joins
-/// `group.com.shawnbrown.file13` and behaves badly. That's a low-
+/// `group.com.shawnbrown.File13` and behaves badly. That's a low-
 /// likelihood scenario; the HMAC is here to make it explicit that the
 /// store's contents are authenticated, not just stored.
 ///

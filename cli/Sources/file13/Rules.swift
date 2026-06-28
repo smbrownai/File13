@@ -170,7 +170,7 @@ struct RulesCommand: AsyncParsableCommand {
             static let configuration = CommandConfiguration(
                 abstract: "Install a launchd agent that runs `file13 rules run` on a schedule.",
                 discussion: """
-                Writes a plist to `~/Library/LaunchAgents/com.shawnbrown.file13.rules.plist`
+                Writes a plist to `~/Library/LaunchAgents/com.shawnbrown.File13.rules.plist`
                 and loads it via `launchctl bootstrap`. The agent runs as your user (not
                 root), so it can reach the same App Group container and Keychain.
 

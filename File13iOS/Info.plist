@@ -9,7 +9,7 @@
 	  `INFOPLIST_KEY_*` flags rather than being hard-coded here.
 	  Universal Purchase requires the same `CFBundleIdentifier` family as the
 	  macOS app, so the build setting `PRODUCT_BUNDLE_IDENTIFIER` is set to
-	  `com.shawnbrown.file13` (identical to the Mac app).
+	  `com.shawnbrown.File13` (identical to the Mac app).
 	-->
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>

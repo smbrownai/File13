@@ -16,7 +16,7 @@
         because:
 
           - The App Group container directory at
-            `~/Library/Group Containers/group.com.shawnbrown.file13/` is
+            `~/Library/Group Containers/group.com.shawnbrown.File13/` is
             created by the GUI app on first launch. Any process owned by the
             same user can read/write that tree as plain filesystem paths.
             `FileManager.containerURL(forSecurityApplicationGroupIdentifier:)`
