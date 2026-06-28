@@ -86,7 +86,7 @@ struct AIFeatureTuningRow: View {
 
     private func hasKey(for kind: AIProviderKind) -> Bool {
         guard let key = try? KeychainStore.loadAIKey(for: kind) else { return false }
-        return !(key ?? "").isEmpty
+        return !key.isEmpty
     }
 
     private enum ProviderChoice: Hashable {

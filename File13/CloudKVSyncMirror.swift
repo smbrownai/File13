@@ -44,9 +44,12 @@ final class CloudKVSyncMirror {
     private var observer: NSObjectProtocol?
     private var defaultsObserver: NSObjectProtocol?
 
-    init(defaults: UserDefaults = SharedDefaults.suite,
+    init(defaults: UserDefaults? = nil,
          store: NSUbiquitousKeyValueStore = .default) {
-        self.defaults = defaults
+        // Resolve the shared suite inside the (main-actor) init body rather
+        // than as a default-argument expression — default args evaluate in a
+        // nonisolated context, which can't touch `SharedDefaults.suite`.
+        self.defaults = defaults ?? SharedDefaults.suite
         self.store = store
     }
 
@@ -62,8 +65,13 @@ final class CloudKVSyncMirror {
             queue: .main
         ) { [weak self] note in
             guard let self else { return }
+            // Extract the Sendable payload here (the notification itself is
+            // non-Sendable and can't cross into the @MainActor Task).
+            let userInfo = note.userInfo
+            let changedKeys = userInfo?[NSUbiquitousKeyValueStoreChangedKeysKey] as? [String] ?? []
+            let reason = (userInfo?[NSUbiquitousKeyValueStoreChangeReasonKey] as? Int) ?? -1
             Task { @MainActor in
-                self.handleRemoteChange(note: note)
+                self.handleRemoteChange(changedKeys: changedKeys, reason: reason)
             }
         }
 
@@ -248,14 +256,11 @@ final class CloudKVSyncMirror {
 
     // MARK: - Remote-change handling
 
-    private func handleRemoteChange(note: Notification) {
-        guard let userInfo = note.userInfo else { return }
-        guard let changedKeys = userInfo[NSUbiquitousKeyValueStoreChangedKeysKey] as? [String] else { return }
+    private func handleRemoteChange(changedKeys: [String], reason: Int) {
         // Server-driven conflict resolution: `Initial` means we just got
         // first-sync state; `ServerChange` means a remote write; both flow
         // through `pull` identically. The `QuotaViolationChange` and
         // `AccountChange` reason codes deserve user-visible surfacing.
-        let reason = (userInfo[NSUbiquitousKeyValueStoreChangeReasonKey] as? Int) ?? -1
         if reason == NSUbiquitousKeyValueStoreQuotaViolationChange {
             lastStatus = .error("iCloud sync is over quota — some changes won't sync until you free space.")
         } else if reason == NSUbiquitousKeyValueStoreAccountChange {

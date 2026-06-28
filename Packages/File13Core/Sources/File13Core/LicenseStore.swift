@@ -61,6 +61,12 @@ public final class LicenseStore {
         static let cachedTier = "File13.license.cachedTier"
     }
 
+    /// Long-lived task iterating `Transaction.updates`. Started once at
+    /// `bootstrap()` and kept alive for the app's lifetime (the store is
+    /// owned by the App's `@State`, so it never deinits before exit — no
+    /// explicit cancellation needed).
+    private var updatesListener: Task<Void, Never>?
+
     public init(defaults: UserDefaults = SharedDefaults.suite) {
         self.defaults = defaults
         // Seed from cache so offline launches don't gate a paying user
@@ -79,15 +85,30 @@ public final class LicenseStore {
     /// `Transaction.updates` observation.
     public func bootstrap() async {
         #if DEBUG
-        // Skip StoreKit entirely in debug builds. Developers shouldn't
-        // have to ferry sandbox-Apple-IDs around just to test features
-        // gated by Pro.
+        // Skip StoreKit entirely in debug builds — no tier/price round-trip
+        // and no `Transaction.updates` listener. Developers shouldn't have
+        // to ferry sandbox-Apple-IDs around just to test Pro-gated features,
+        // and starting the listener here would make `Transaction.updates`
+        // touch StoreKit inside the unit-test host (which has no store
+        // configured) and hang the test runner at launch.
         tier = .pro
         defaults.set(Tier.pro.rawValue, forKey: Keys.cachedTier)
         #else
+        // Start the transaction listener FIRST — before the tier/price
+        // round-trips and therefore before the user can reach the paywall.
+        // Apple requires an always-on `Transaction.updates` iteration so we
+        // never miss a transaction that arrives outside an explicit
+        // `purchase()` call — an Ask-to-Buy approval, a Family Sharing
+        // grant, or a purchase interrupted before StoreKit could hand it
+        // back. Having it live before any purchase also silences StoreKit's
+        // "purchase without listening for transaction updates" warning.
+        if updatesListener == nil {
+            updatesListener = Task { [weak self] in
+                await self?.observeTransactionUpdates()
+            }
+        }
         await refreshTier()
         await fetchDisplayPrice()
-        Task { await observeTransactionUpdates() }
         #endif
     }
 

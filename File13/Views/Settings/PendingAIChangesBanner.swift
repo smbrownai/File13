@@ -30,13 +30,15 @@ struct PendingSyncChangesBanner: View {
         /// banner is responsible for.
         let keys: Set<String>
         /// Human-readable per-key label for the diff list.
-        let labelForKey: (String) -> String
+        /// `@MainActor`: only ever invoked while rendering the banner, and
+        /// some implementations read main-actor state (`SharedDefaults.suite`).
+        let labelForKey: @MainActor (String) -> String
         /// Human-readable "current → incoming" summary line for one
         /// pending item.
-        let diffSummary: (PendingSyncChangesStore.Pending) -> String
+        let diffSummary: @MainActor (PendingSyncChangesStore.Pending) -> String
         /// Apply one pending item to the corresponding store. Called
         /// synchronously from the main actor.
-        let apply: (PendingSyncChangesStore.Pending) -> Void
+        let apply: @MainActor (PendingSyncChangesStore.Pending) -> Void
     }
 
     let config: Config
@@ -171,8 +173,8 @@ struct PendingAIChangesBanner: View {
             title: "AI settings changed on another device",
             summary: "These changes haven't been applied on this Mac. Review them before accepting — they affect which provider sees your email metadata.",
             keys: SyncedSensitiveKeys.aiKeys,
-            labelForKey: Self.label(for:),
-            diffSummary: Self.summary(for:),
+            labelForKey: { Self.label(for: $0) },
+            diffSummary: { Self.summary(for: $0) },
             apply: { item in self.apply(item: item) }
         ))
     }
@@ -245,7 +247,7 @@ struct PendingAccountChangesBanner: View {
             summary: "iCloud delivered changes to your account list — host, port, or username. Review before accepting; an attacker with access to your iCloud account could otherwise rewrite an account's host and capture your password on the next refresh.",
             keys: SyncedSensitiveKeys.accountKeys,
             labelForKey: { _ in "Accounts list (host / port / username)" },
-            diffSummary: Self.summary(for:),
+            diffSummary: { Self.summary(for: $0) },
             apply: { item in self.apply(item: item) }
         ))
     }
@@ -358,7 +360,7 @@ struct PendingRuleChangesBanner: View {
             summary: "iCloud delivered changes to your rules. Rules can delete, archive, or move mail automatically — review carefully. An attacker with access to your iCloud account could otherwise inject a destructive rule that fires on the next scheduled run.",
             keys: SyncedSensitiveKeys.ruleKeys,
             labelForKey: { _ in "Rules" },
-            diffSummary: Self.summary(for:),
+            diffSummary: { Self.summary(for: $0) },
             apply: { item in self.apply(item: item) }
         ))
     }
@@ -397,8 +399,8 @@ struct PendingSafetyChangesBanner: View {
             title: "Safety settings changed on another device",
             summary: "iCloud delivered changes to your destructive-action guard rails — undo buffer, confirmations, dry-run, or VIP / transactional protection. Review before accepting; weakening these is how a compromised iCloud account would make subsequent rule runs unsafe.",
             keys: SyncedSensitiveKeys.safetyKeys,
-            labelForKey: Self.label(for:),
-            diffSummary: Self.summary(for:),
+            labelForKey: { Self.label(for: $0) },
+            diffSummary: { Self.summary(for: $0) },
             apply: { item in self.apply(item: item) }
         ))
     }
@@ -473,7 +475,7 @@ struct PendingVIPChangesBanner: View {
             summary: "iCloud delivered changes to your VIPs — pinned, excluded, or auto-detected. Review before accepting; an attacker with access to your iCloud account could otherwise add senders to the excluded list, bypassing the VIP-protection-from-rules guard rail.",
             keys: SyncedSensitiveKeys.vipKeys,
             labelForKey: { _ in "VIP set (pinned / excluded / auto-detected)" },
-            diffSummary: Self.summary(for:),
+            diffSummary: { Self.summary(for: $0) },
             apply: { item in self.apply(item: item) }
         ))
     }
@@ -521,7 +523,7 @@ struct PendingRepliedMessagesChangesBanner: View {
             summary: "iCloud delivered changes to the per-account list of messages you've replied to. Review before accepting; replied-to senders can be auto-promoted to VIP, which an attacker could exploit to elevate a sender they control.",
             keys: SyncedSensitiveKeys.repliedKeys,
             labelForKey: { _ in "Replied-messages index" },
-            diffSummary: Self.summary(for:),
+            diffSummary: { Self.summary(for: $0) },
             apply: { item in self.apply(item: item) }
         ))
     }
@@ -558,7 +560,7 @@ struct PendingCategoriesChangesBanner: View {
             summary: "iCloud delivered changes to the AI-assigned sender categories. Category-conditional rules apply differently when categories flip — review before accepting.",
             keys: SyncedSensitiveKeys.categoryKeys,
             labelForKey: { _ in "Sender categories" },
-            diffSummary: Self.summary(for:),
+            diffSummary: { Self.summary(for: $0) },
             apply: { item in self.apply(item: item) }
         ))
     }

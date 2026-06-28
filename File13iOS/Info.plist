@@ -33,6 +33,16 @@
 	<string>public.app-category.productivity</string>
 	<key>NSHumanReadableCopyright</key>
 	<string>Copyright © 2026 Shawn M. Brown. MIT License.</string>
+	<!--
+	  Export compliance: File13 uses only standard, exempt encryption
+	  (HTTPS/TLS to AI providers, IMAPS to mail servers, the system
+	  Keychain). Declaring this here means App Store Connect won't prompt
+	  for an encryption answer on every upload. If you ever add custom or
+	  non-exempt cryptography, this must change to `true` and you'll owe
+	  the corresponding export documentation.
+	-->
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>

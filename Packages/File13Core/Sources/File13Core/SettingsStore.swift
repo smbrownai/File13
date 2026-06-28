@@ -20,19 +20,18 @@ public final class SettingsStore {
     }
 
     /// Alternate app-icon choices. `.default` keeps the bundle icon — the
-    /// liquid-glass stacked-slab navy mark. `.colorful` and `.vintage` are
-    /// Pro-gated alternates that ship inside the app and get applied at
+    /// blue radar-scope mark. `.vintage` is a Pro-gated alternate (the
+    /// retro CRT-radar mark) that ships inside the app and gets applied at
     /// runtime: on iOS via `setAlternateIconName`, on macOS via
     /// `NSApp.applicationIconImage`.
     public enum AppIconChoice: String, CaseIterable, Identifiable, Sendable {
-        case `default`, colorful, vintage
+        case `default`, vintage
 
         public var id: String { rawValue }
 
         public var label: String {
             switch self {
             case .default:  "Default"
-            case .colorful: "Colorful"
             case .vintage:  "Vintage"
             }
         }
@@ -44,7 +43,6 @@ public final class SettingsStore {
         public var macAssetName: String {
             switch self {
             case .default:  "AppIcon"
-            case .colorful: "AppIcon.Colorful"
             case .vintage:  "AppIcon.Vintage"
             }
         }
@@ -56,7 +54,6 @@ public final class SettingsStore {
         public var previewAssetName: String {
             switch self {
             case .default:  "IconPreview.Default"
-            case .colorful: "IconPreview.Colorful"
             case .vintage:  "IconPreview.Vintage"
             }
         }
@@ -67,17 +64,16 @@ public final class SettingsStore {
         public var iOSAlternateName: String? {
             switch self {
             case .default:  nil
-            case .colorful: "Colorful"
             case .vintage:  "Vintage"
             }
         }
 
         /// True when this choice requires File13 Pro. `.default` is always
-        /// available; alternates are a Pro perk.
+        /// available; the vintage alternate is a Pro perk.
         public var requiresPro: Bool {
             switch self {
-            case .default:              false
-            case .colorful, .vintage:   true
+            case .default:  false
+            case .vintage:  true
             }
         }
     }

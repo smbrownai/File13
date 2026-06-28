@@ -2,11 +2,13 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<key>com.apple.developer.ubiquity-kvstore-identifier</key>
+	<string>$(TeamIdentifierPrefix)com.shawnbrown.file13</string>
 	<key>com.apple.security.app-sandbox</key>
 	<true/>
 	<key>com.apple.security.application-groups</key>
 	<array>
-		<string>group.com.shawnbrown.file13</string>
+		<string>group.com.shawnbrown.File13</string>
 	</array>
 	<key>com.apple.security.network.client</key>
 	<true/>
@@ -15,14 +17,5 @@
 		<string>$(AppIdentifierPrefix)com.shawnbrown.file13</string>
 		<string>$(AppIdentifierPrefix)com.shawnbrown.file13.shared</string>
 	</array>
-	<!-- iCloud key-value store identifier. Enables `NSUbiquitousKeyValueStore`
-	     so we can sync settings, account list (without passwords), rules, AI
-	     preferences, and other config across the user's Macs (and a future
-	     iCloud-enabled iPhone/iPad app). Email headers, message contents, and
-	     the local SwiftData cache are deliberately NOT routed through here —
-	     see `CloudKVSync.allowlist` for the exact set of keys that cross the
-	     iCloud boundary. -->
-	<key>com.apple.developer.ubiquity-kvstore-identifier</key>
-	<string>$(TeamIdentifierPrefix)com.shawnbrown.file13</string>
 </dict>
 </plist>

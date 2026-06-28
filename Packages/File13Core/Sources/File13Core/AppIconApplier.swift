@@ -58,7 +58,7 @@ public enum AppIconApplier {
         case .default:
             // nil restores the bundle's canonical icon.
             NSApp.applicationIconImage = nil
-        case .colorful, .vintage:
+        case .vintage:
             if let image = NSImage(named: choice.macAssetName) {
                 NSApp.applicationIconImage = image
             } else {

@@ -67,16 +67,35 @@ public enum LLMURLSession {
 /// a primary + at least one backup pin so a single rotation doesn't take
 /// the provider offline for everyone.
 ///
-/// **Status (2026-05-16):** structure is in place, pin values are not
-/// populated. Without populated pins the delegate falls back to standard
-/// ATS validation (still TLS-required and hostname-bound; just no MITM
-/// resistance against CA-issued attacker certs). Populating pins is a
-/// deployment step that has to be verified against each provider's live
-/// chain before shipping.
+/// **Decision (2026-06-27 — v1.0 ships unpinned, deliberately).** The
+/// structure stays in place but `pinsByHost` is left empty. Rationale:
+/// these are hosts we don't control, and pinning third-party API
+/// endpoints is fragile — a provider CA rotation we can't coordinate with
+/// would break every AI call for all users until an app update clears MAS
+/// review (days). The providers have already demonstrated CA mobility
+/// (api.anthropic.com and api.openai.com both currently chain through
+/// Google Trust Services). Against that, the marginal gain — resistance to
+/// a CA-issued *attacker* cert, a nation-state-tier threat — doesn't
+/// justify the availability risk on top of the protections this session
+/// already enforces (TLS-required, hostname-bound, every redirect refused,
+/// ephemeral/no-credential-storage).
+///
+/// Live chains captured 2026-06-27, for whoever revisits this (pin the
+/// intermediate as primary + root as backup if pinning is ever enabled):
+///
+/// | host                                | intermediate (SPKI)                            | root (SPKI)                                     |
+/// |-------------------------------------|------------------------------------------------|-------------------------------------------------|
+/// | api.anthropic.com (GTS WE1/R4)      | `kIdp6NNEd8wsugYyyIYFsi1ylMCED3hZbSR8ZFsa/A4=` | `mEflZT5enoR1FuXLgYYGqnVEoZvmf9c2bVBpiOjYQ0c=`  |
+/// | api.openai.com (GTS WE1/R4)         | `kIdp6NNEd8wsugYyyIYFsi1ylMCED3hZbSR8ZFsa/A4=` | `mEflZT5enoR1FuXLgYYGqnVEoZvmf9c2bVBpiOjYQ0c=`  |
+/// | generativelanguage… (GTS WR2/R1)    | `YPtHaftLw6/0vnc2BnNKGF54xiCA28WFcccjkA4ypCM=` | `hxqRlPTu1bMS/0DITB1SSu0vd4u/8l8TjPgfaAp63Gc=`  |
+/// | api.perplexity.ai (LE YE2/ISRG X2)  | `s/tdAOmUzd8syaTuqfgGvFcn6DzA5Cmb+Vby1ST+U3Y=` | `diGVwiVYbubAI3RW4hB9xU8e/CH2GnkuvVFZE8zmgzI=`  |
+///
+/// With `pinsByHost` empty the delegate falls back to standard ATS
+/// validation for every host — see `LLMSessionDelegate`.
 public enum LLMTLSPins {
     /// Base64-encoded SHA-256 hashes of the SubjectPublicKeyInfo (SPKI) for
-    /// trusted CA certificates per host. Populate before shipping. Keep
-    /// this private — pin rotations are an operational matter.
+    /// trusted CA certificates per host. Empty by design (see above). Keep
+    /// any future values private — pin rotations are an operational matter.
     public static let pinsByHost: [String: Set<String>] = [
         "api.anthropic.com":                  [],
         "api.openai.com":                     [],
