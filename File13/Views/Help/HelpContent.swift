@@ -234,8 +234,8 @@ struct HelpContentView: View {
         HelpHeading("App sandbox")
         HelpParagraph("File13 runs inside Apple's App Sandbox. It can talk to the network (for IMAP), read and write its own App Group container, and access its own Keychain entries. It has no access to other apps' data, to arbitrary parts of your filesystem, or to your contacts, calendar, photos, etc.")
 
-        HelpHeading("The bundled CLI")
-        HelpParagraph("File13 ships a `file13` command-line tool inside the app bundle. It's signed with the same developer identity as the app and shares the same Keychain access group, so it sees the mailboxes you've already added. Installing it via **Edit → Install File13 CLI…** requires File13 Pro.")
+        HelpHeading("The companion CLI")
+        HelpParagraph("File13 has a companion `file13` command-line tool, distributed via Homebrew (`brew install smbrownai/file13/file13`) rather than bundled inside the app. It shares File13's App Group container, so it sees the settings, accounts, and rules you've already set up — but mailbox passwords live in a separate keychain, so you re-add those once with `file13 accounts add`. Surface the install instructions via **Edit → Install File13 CLI…**; the CLI requires File13 Pro.")
 
         HelpHeading("OAuth status")
         HelpParagraph("File13 includes scaffolding for OAuth sign-in but doesn't enable it for any provider today. Major providers gate IMAP OAuth behind verification requirements that aren't feasible for an indie app — Gmail requires an annual security audit, Microsoft requires a paid enterprise tenant. Every account today signs in with an app-specific password. The privacy and security properties are identical either way.")
