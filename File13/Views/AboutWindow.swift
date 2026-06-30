@@ -5,10 +5,9 @@ import File13Core
 /// Scene identifier for the About window.
 let AboutWindowID = "file13.about"
 
-private let GitHubURL = URL.verified("https://github.com/smbrownai/file13")
-private let SupportURL = URL.verified("mailto:dev@snxt.ai")
-private let PrivacyPolicyURL = URL.verified("https://github.com/smbrownai/file13/blob/main/docs/privacy.html")
-private let LicenseURL = URL.verified("https://github.com/smbrownai/file13/blob/main/LICENSE")
+private let PrivacyPolicyURL = URL.verified("https://www.snxt.ai/file13/privacy.html")
+private let SupportURL = URL.verified("https://www.snxt.ai/file13/support.html")
+private let LicenseURL = URL.verified("https://www.snxt.ai/file13/license.html")
 
 /// Replaces the default macOS About menu item with one that opens our
 /// custom window instead of AppKit's panel. Lives in its own `Commands`
@@ -34,7 +33,7 @@ struct AboutWindowView: View {
 
     private var copyright: String {
         (Bundle.main.infoDictionary?["NSHumanReadableCopyright"] as? String)
-            ?? "Copyright © 2026 Shawn M. Brown. MIT License."
+            ?? "Copyright © 2026 Shawn M. Brown."
     }
 
     var body: some View {
@@ -84,8 +83,6 @@ struct AboutWindowView: View {
                 Link("License", destination: LicenseURL)
                 Text("·").foregroundStyle(.tertiary)
                 Link("Support", destination: SupportURL)
-                Text("·").foregroundStyle(.tertiary)
-                Link("GitHub", destination: GitHubURL)
             }
             .font(.system(size: 12))
 

@@ -29,7 +29,7 @@
 	<key>NSHighResolutionCapable</key>
 	<true/>
 	<key>NSHumanReadableCopyright</key>
-	<string>Copyright © 2026 Shawn M. Brown. MIT License.</string>
+	<string>Copyright © 2026 Shawn M. Brown.</string>
 	<key>NSPrincipalClass</key>
 	<string>NSApplication</string>
 </dict>
