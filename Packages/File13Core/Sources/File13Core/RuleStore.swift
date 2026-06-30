@@ -118,20 +118,26 @@ public final class RuleStore {
     public func applySyncedRules(from data: Data) {
         guard let decoded = try? JSONDecoder().decode([Rule].self, from: data) else { return }
         rules = decoded
-        let encoder = JSONEncoder()
-        encoder.outputFormatting = [.sortedKeys]
-        if let reencoded = try? encoder.encode(rules) {
+        if let reencoded = try? Self.compactEncoder.encode(rules) {
             defaults.set(reencoded, forKey: Self.rulesKey)
         }
         // Don't mark dirty — the synced source is authoritative for this
         // accepted change. Also write the legacy file so a downgrade
         // still works.
-        let prettyEncoder = JSONEncoder()
-        prettyEncoder.outputFormatting = [.prettyPrinted, .sortedKeys]
-        if let pretty = try? prettyEncoder.encode(rules) {
+        if let pretty = try? Self.prettyEncoder.encode(rules) {
             try? pretty.write(to: fileURL, options: .atomic)
         }
     }
+
+    /// Shared encoders, hoisted to statics so each save doesn't allocate a
+    /// fresh `JSONEncoder`. Compact for the UserDefaults blob, pretty for
+    /// the legacy `rules.json` file. (Main-actor-isolated via the class.)
+    private static let compactEncoder: JSONEncoder = {
+        let e = JSONEncoder(); e.outputFormatting = [.sortedKeys]; return e
+    }()
+    private static let prettyEncoder: JSONEncoder = {
+        let e = JSONEncoder(); e.outputFormatting = [.prettyPrinted, .sortedKeys]; return e
+    }()
 
     private func load() {
         // Primary path: UserDefaults JSON blob (so iCloud sync can carry it).
@@ -150,16 +156,12 @@ public final class RuleStore {
     }
 
     private func save() {
-        let encoder = JSONEncoder()
-        encoder.outputFormatting = [.sortedKeys]
-        guard let data = try? encoder.encode(rules) else { return }
+        guard let data = try? Self.compactEncoder.encode(rules) else { return }
         defaults.set(data, forKey: Self.rulesKey)
         CloudKVSync.markDirty(Self.rulesKey, defaults: defaults)
         // Also keep `rules.json` written so a user reverting to an older
         // build still sees their rules. Pretty-printed for readability.
-        let prettyEncoder = JSONEncoder()
-        prettyEncoder.outputFormatting = [.prettyPrinted, .sortedKeys]
-        if let pretty = try? prettyEncoder.encode(rules) {
+        if let pretty = try? Self.prettyEncoder.encode(rules) {
             try? pretty.write(to: fileURL, options: .atomic)
         }
     }

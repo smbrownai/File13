@@ -35,16 +35,16 @@ public enum LLMProviderFactory {
             return AppleFoundationModelsProvider()
         case .openai:
             let key = try? KeychainStore.loadAIKey(for: kind)
-            return OpenAIProvider(apiKey: key ?? nil, model: model)
+            return OpenAIProvider(apiKey: key, model: model)
         case .anthropic:
             let key = try? KeychainStore.loadAIKey(for: kind)
-            return AnthropicProvider(apiKey: key ?? nil, model: model)
+            return AnthropicProvider(apiKey: key, model: model)
         case .google:
             let key = try? KeychainStore.loadAIKey(for: kind)
-            return GoogleProvider(apiKey: key ?? nil, model: model)
+            return GoogleProvider(apiKey: key, model: model)
         case .perplexity:
             let key = try? KeychainStore.loadAIKey(for: kind)
-            return PerplexityProvider(apiKey: key ?? nil, model: model)
+            return PerplexityProvider(apiKey: key, model: model)
         }
     }
 }

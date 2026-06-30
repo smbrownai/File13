@@ -218,7 +218,8 @@ public struct SenderAdvisor {
     /// first `{ … }` substring that parses.
     private static func extractJSONObject(from raw: String) -> Data? {
         if let range = raw.range(of: "{", options: []),
-           let closing = raw.range(of: "}", options: .backwards) {
+           let closing = raw.range(of: "}", options: .backwards),
+           range.lowerBound < closing.lowerBound {
             let candidate = raw[range.lowerBound...closing.lowerBound]
             if let data = candidate.data(using: .utf8) { return data }
         }
@@ -252,13 +253,20 @@ public struct SenderAdvisor {
     }
     """
 
+    /// Reused across calls — allocating a `DateFormatter` per prompt is
+    /// wasteful and these settings never change. (Main-actor-isolated via
+    /// the enclosing type.)
+    private static let intervalFormatter: DateFormatter = {
+        let f = DateFormatter()
+        f.dateStyle = .medium
+        f.timeStyle = .none
+        return f
+    }()
+
     private static func userPrompt(for profile: SenderProfile) -> String {
         let interval: String
         if let oldest = profile.oldestDate, let newest = profile.newestDate {
-            let formatter = DateFormatter()
-            formatter.dateStyle = .medium
-            formatter.timeStyle = .none
-            interval = "\(formatter.string(from: oldest)) → \(formatter.string(from: newest))"
+            interval = "\(Self.intervalFormatter.string(from: oldest)) → \(Self.intervalFormatter.string(from: newest))"
         } else {
             interval = "unknown"
         }

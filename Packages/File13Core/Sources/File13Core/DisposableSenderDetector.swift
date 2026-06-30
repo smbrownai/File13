@@ -57,7 +57,7 @@ public enum DisposableSenderDetector {
         }
         var set: Set<String> = []
         set.reserveCapacity(6_000)
-        for line in raw.split(separator: "\n", omittingEmptySubsequences: true) {
+        for line in raw.split(separator: "\n") {
             let trimmed = line.trimmingCharacters(in: .whitespaces)
             // The upstream file is plain `domain\n`, no comments — but defend against future
             // schema changes by skipping anything that looks like a comment or is empty.

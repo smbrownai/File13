@@ -1192,17 +1192,23 @@ public final class InboxStore {
     /// path are dropped — they're surfaced as "manual review needed" elsewhere if desired.
     public func unsubscribeCandidatesForSelection() -> [UnsubscribeCandidate] {
         guard hasSelection else { return [] }
-        let lookup = headersById
+        ensureAggregateCache()
+        let byHeaderId = _headersByIdCache
+        let bySenderId = _sendersByIdCache
         var senderIds = Set<String>()
         for id in selectedMessageIds {
-            if let header = lookup[id] {
+            if let header = byHeaderId[id] {
                 senderIds.insert(header.senderAddress.lowercased())
             }
         }
         guard !senderIds.isEmpty else { return [] }
+        // Resolve each selected sender by direct id lookup instead of
+        // scanning every sender (mirrors `sendersInSelection`). The final
+        // sort below makes iteration order irrelevant.
         var candidates: [UnsubscribeCandidate] = []
-        for sender in senders where senderIds.contains(sender.id) {
-            guard let anchor = sender.unsubscribeAnchor else { continue }
+        for senderId in senderIds {
+            guard let sender = bySenderId[senderId],
+                  let anchor = sender.unsubscribeAnchor else { continue }
             let mechanisms = UnsubscribeParser.parse(
                 listUnsubscribe: anchor.listUnsubscribe,
                 listUnsubscribePost: anchor.listUnsubscribePost

@@ -148,30 +148,35 @@ public struct MessageCache {
         // pass through the rows builds both the verification input and
         // the result; the prior implementation hashed twice and used an
         // O(N²) lookup for the post-filter step.
-        let byMailbox = Dictionary(grouping: rows, by: { $0.mailboxName })
-        var kept: [MessageHeader] = []
-        kept.reserveCapacity(rows.count)
-        var anyDeleted = false
-        // Preserve the descriptor's date-desc order: iterate mailboxes in
-        // an order that yields the same overall sort. Concatenating the
-        // per-mailbox slices doesn't preserve global sort, so we walk
-        // `rows` once at the end to assemble in descriptor order.
+        // Convert every row to a header exactly once (toHeader() runs the
+        // memoized transactional / disposable-domain scans, so a second pass
+        // would re-do real work on cold start). `allHeaders[i]` corresponds
+        // to `rows[i]` by index; we group indices by mailbox to verify
+        // per-(account, mailbox) and assemble the result in descriptor order.
+        let allHeaders = rows.map { $0.toHeader() }
+        var indicesByMailbox: [String: [Int]] = [:]
+        for (i, row) in rows.enumerated() {
+            indicesByMailbox[row.mailboxName, default: []].append(i)
+        }
         var keptMailboxes: Set<String> = []
-        for (mailbox, mailboxRows) in byMailbox {
-            let headers = mailboxRows.map { $0.toHeader() }
+        var anyDeleted = false
+        for (mailbox, indices) in indicesByMailbox {
+            let headers = indices.map { allHeaders[$0] }
             if verifyIntegrity(accountId: accountId, mailbox: mailbox, headers: headers) {
                 keptMailboxes.insert(mailbox)
             } else {
-                for row in mailboxRows { context.delete(row) }
+                for i in indices { context.delete(rows[i]) }
                 anyDeleted = true
             }
         }
         if anyDeleted { try? context.save() }
-        if keptMailboxes.count == byMailbox.count {
-            return rows.map { $0.toHeader() }
+        if keptMailboxes.count == indicesByMailbox.count {
+            return allHeaders
         }
-        for row in rows where keptMailboxes.contains(row.mailboxName) {
-            kept.append(row.toHeader())
+        var kept: [MessageHeader] = []
+        kept.reserveCapacity(allHeaders.count)
+        for (i, row) in rows.enumerated() where keptMailboxes.contains(row.mailboxName) {
+            kept.append(allHeaders[i])
         }
         return kept
     }

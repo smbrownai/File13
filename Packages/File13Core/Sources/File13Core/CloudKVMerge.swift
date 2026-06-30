@@ -45,6 +45,12 @@ import Foundation
 /// the cycle terminates. Merge functions must therefore be **idempotent**
 /// on their own output and **commutative** between devices.
 public enum CloudKVMerge {
+    /// Shared default encoder for the three merge paths — avoids allocating
+    /// a fresh `JSONEncoder` per merge. `JSONEncoder` is `Sendable`, so a
+    /// plain static is concurrency-safe even though this enum is not
+    /// actor-isolated.
+    private static let encoder = JSONEncoder()
+
     /// Result of a per-key merge. `merged` is what should be written to
     /// `UserDefaults`; `pushBack` is true when the merged value adds
     /// entries the remote doesn't yet have (so the mirror should mark the
@@ -96,7 +102,7 @@ public enum CloudKVMerge {
         var merged = localDict
         for (k, v) in remoteDict { merged[k] = v }
         let pushBack = localDict.keys.contains { remoteDict[$0] == nil }
-        let mergedData = (try? JSONEncoder().encode(merged)) ?? (remote as? Data) ?? Data()
+        let mergedData = (try? Self.encoder.encode(merged)) ?? (remote as? Data) ?? Data()
         return Result(merged: mergedData, pushBack: pushBack)
     }
 
@@ -144,7 +150,7 @@ public enum CloudKVMerge {
                 merged[account] = unioned
             }
         }
-        let mergedData = (try? JSONEncoder().encode(merged)) ?? (remote as? Data) ?? Data()
+        let mergedData = (try? Self.encoder.encode(merged)) ?? (remote as? Data) ?? Data()
         return Result(merged: mergedData, pushBack: pushBack)
     }
 
@@ -183,7 +189,7 @@ public enum CloudKVMerge {
             !localState.excluded.subtracting(remoteState.excluded).isEmpty ||
             pickLocalDetection && merged != remoteState
 
-        let mergedData = (try? JSONEncoder().encode(merged)) ?? (remote as? Data) ?? Data()
+        let mergedData = (try? Self.encoder.encode(merged)) ?? (remote as? Data) ?? Data()
         return Result(merged: mergedData, pushBack: pushBack)
     }
 
