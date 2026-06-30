@@ -505,15 +505,6 @@ struct iOSMessageListView: View {
         session.mailboxes.contains { $0.name != session.currentMailbox }
     }
 
-    /// Sync progress text — non-nil only while a fetch is actively
-    /// reporting progress against a known total. Used in the bottom bar so
-    /// the user gets feedback during a long initial sync without occupying
-    /// the pill the rest of the time.
-    private var syncProgressText: String? {
-        guard session.isRefreshing, session.fetchTotal > 0 else { return nil }
-        return "Syncing \(session.fetchProgress) of \(session.fetchTotal)…"
-    }
-
     private var displayModeMenu: some View {
         Menu {
             Button {
@@ -611,9 +602,7 @@ struct iOSMessageListView: View {
         .foregroundStyle(.primary)
     }
 
-    /// Compact "200 / 5,000" caption for the title-row sync indicator —
-    /// shorter than `syncProgressText`, which carried the "Syncing …"
-    /// prefix back when it lived in its own bar.
+    /// Compact "200 / 5,000" caption for the title-row sync indicator.
     private var syncCompactText: String? {
         guard session.isRefreshing, session.fetchTotal > 0 else { return nil }
         return "\(session.fetchProgress) / \(session.fetchTotal)"

@@ -300,13 +300,6 @@ struct ContentView: View {
         }
     }
 
-    private var isLoading: Bool {
-        switch inbox.connectionState {
-        case .connecting, .fetching: true
-        default: false
-        }
-    }
-
     private var fetchingTitle: String { inbox.fetchProgressTitle }
 
     private var connectingSubtitle: String? {

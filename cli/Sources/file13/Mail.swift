@@ -464,7 +464,6 @@ private enum Mail {
             // Sync local cache so the next senders-list reflects reality without forcing
             // a fresh refresh (the IMAP commit already happened; the headers we just
             // affected are no longer in the source mailbox).
-            let removeIds = Set(plan.headers.map { $0.id })
             try? cache.applyDiff(
                 accountId: plan.account.id,
                 mailbox: selection.mailbox,
@@ -472,7 +471,6 @@ private enum Mail {
                 flagUpdates: [:],
                 insertedHeaders: []
             )
-            _ = removeIds // silence unused-warning placeholder
 
             if !common.json {
                 print("\(line) \(operation.verb)d \(messageCount) message(s) from \(senderCount) sender(s)")

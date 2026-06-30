@@ -412,21 +412,12 @@ public actor SwiftMailIMAPClient: IMAPClientProtocol {
         return MailboxStatus(messageCount: status.messageCount, unseenCount: status.unseenCount)
     }
 
-    private func ensureSelected(_ mailbox: String) async throws {
-        guard let s = server else { throw IMAPClientError.notConnected }
-        try Self.validateMailboxName(mailbox)
-        if selectedMailbox != mailbox {
-            _ = try await s.selectMailbox(mailbox)
-            selectedMailbox = mailbox
-        }
-    }
-
     /// SELECT the mailbox unconditionally (so we get a fresh UIDVALIDITY in
     /// the response) and verify it matches `expected`. Pass `nil` to skip the
     /// check — used only by ad-hoc callers that built the UIDs in the same
     /// call and have no prior validity to compare against.
     ///
-    /// Why always-SELECT instead of `ensureSelected`'s cached fast path:
+    /// Why always-SELECT instead of caching the selected mailbox:
     /// IMAP servers send UIDVALIDITY only in the SELECT response, not on
     /// every command. If we reuse a stale selection from earlier in the
     /// session, we never notice that the server changed UIDVALIDITY mid-
