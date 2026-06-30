@@ -268,12 +268,13 @@ struct ConfigSnapshot {
     private static func applySettings(_ dict: [String: Any], mode: ImportMode, dryRun: Bool) throws {
         let settings = SettingsStore()
         var changes = 0
-        // We never mass-overwrite — each known key is read individually so unknown keys
-        // in the JSON don't crash the import. `replace` mode resets to defaults first
-        // by going through every property; `merge` mode only writes provided keys.
-        if mode == .replace {
-            // Mark every key as "absent" in dict so all settings get applied (or reset).
-            // Simpler implementation: walk known keys.
+        // Each known key is read individually so unknown keys in the JSON
+        // don't crash the import. `merge` writes only the keys present in the
+        // file; `replace` first resets every importable setting to its
+        // default, so the file fully defines them and anything it omits
+        // reverts to default.
+        if mode == .replace && !dryRun {
+            settings.resetToDefaults()
         }
         if let v = dict["appearance"] as? String, let parsed = SettingsStore.AppearanceMode(rawValue: v) {
             if !dryRun { settings.appearance = parsed }; changes += 1

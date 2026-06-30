@@ -132,7 +132,8 @@ private struct BucketRow: View {
 
     private var isExpanded: Bool { store.expandedBucketIds.contains(bucket.kind) }
     private var sharePercent: Int {
-        Int((Double(bucket.messageCount) / Double(total)) * 100.rounded())
+        guard total > 0 else { return 0 }
+        return Int((Double(bucket.messageCount) / Double(total) * 100).rounded())
     }
 
     var body: some View {

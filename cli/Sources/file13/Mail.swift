@@ -242,7 +242,14 @@ private enum Mail {
                 }
                 let session = AccountSession(account: acc, cache: cache)
                 await session.connect(credentials: creds)
-                await session.refresh()
+                // Refresh the mailbox we're about to operate on — selectMailbox
+                // switches + syncs a non-INBOX `--mailbox`; refresh() alone only
+                // ever syncs INBOX (the default currentMailbox).
+                if selection.mailbox == session.currentMailbox {
+                    await session.refresh()
+                } else {
+                    await session.selectMailbox(selection.mailbox)
+                }
                 await session.disconnect()
             }
         }

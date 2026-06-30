@@ -104,7 +104,14 @@ struct RefreshCommand: AsyncParsableCommand {
             let session = AccountSession(account: acc, cache: cache)
             await session.connect(credentials: credentials)
             // performRefresh is what writes headers to cache; refresh() awaits its completion.
-            await session.refresh()
+            // For a non-INBOX `--mailbox`, selectMailbox switches the active
+            // mailbox and refreshes *that* one (refresh() alone only ever
+            // syncs INBOX, the default currentMailbox).
+            if mailbox == session.currentMailbox {
+                await session.refresh()
+            } else {
+                await session.selectMailbox(mailbox)
+            }
             let headerCount = session.headers.count
             let lastError = session.lastError
             await session.disconnect()

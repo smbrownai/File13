@@ -504,6 +504,30 @@ public final class SettingsStore {
         KeychainStore.iCloudSyncEnabled = self.iCloudKeychainSyncEnabled
     }
 
+    /// Clear the persisted general/behavior settings so they fall back to
+    /// their built-in defaults, marking each key dirty so the reset
+    /// propagates through iCloud settings sync. This is the set of keys
+    /// `file13 config import/export` round-trips; AI config, triage state,
+    /// accounts, and credentials are deliberately untouched.
+    ///
+    /// Clears the backing `UserDefaults` keys directly (the getters default
+    /// on absence). Intended for the headless config-import `--mode replace`
+    /// path, where the process re-reads state on next launch; an in-memory
+    /// store should be re-initialized to reflect the reset.
+    public func resetToDefaults() {
+        let keys = [
+            Keys.appearance, Keys.refreshSchedule, Keys.accentPalette,
+            Keys.undoBufferSeconds, Keys.confirmBeforeDelete, Keys.confirmBeforeUnsubscribe,
+            Keys.dryRunMode, Keys.softDeleteToTrash, Keys.protectTransactionalFromDeletion,
+            Keys.protectVIPsFromRules, Keys.autoCategorizeNewSenders, Keys.launchAtLogin,
+            Keys.defaultInboxScope, Keys.preferredMailClientBundleId, Keys.preferredBrowserBundleId,
+        ]
+        for key in keys {
+            defaults.removeObject(forKey: key)
+            CloudKVSync.markDirty(key, defaults: defaults)
+        }
+    }
+
     private enum Keys {
         static let appearance           = "File13.appearance"
         static let refreshSchedule      = "File13.refreshSchedule"
