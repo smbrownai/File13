@@ -146,8 +146,13 @@ struct AddAccountSheet: View {
             host = h
             lastDerivedHost = h
             port = String(preset.port)
-        } else if !host.isEmpty {
-            // Custom selected explicitly: leave whatever the user typed.
+        } else if host == lastDerivedHost {
+            // "Other" selected. If the host still holds a value we autofilled
+            // from a previous preset (or email derivation), clear it so any
+            // provider-specific callout — e.g. Yahoo's app-password notice —
+            // disappears. If the user typed their own host, leave it.
+            host = ""
+            lastDerivedHost = ""
         }
     }
 

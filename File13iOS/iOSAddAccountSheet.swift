@@ -107,6 +107,11 @@ struct iOSAddAccountSheet: View {
             host = h
             lastDerivedHost = h
             port = String(preset.port)
+        } else if host == lastDerivedHost {
+            // "Other" selected — clear an autofilled host (and with it the
+            // provider callout). Preserve a host the user typed themselves.
+            host = ""
+            lastDerivedHost = ""
         }
     }
 
