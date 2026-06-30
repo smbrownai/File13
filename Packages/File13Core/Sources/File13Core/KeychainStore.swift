@@ -344,8 +344,13 @@ public enum KeychainStore {
     }
 
     private static func migrateItem(account: String, toSynchronizable enabled: Bool) throws {
-        guard let value = try loadItem(account: account) else { return }
-        guard let data = value.data(using: .utf8) else { throw KeychainError.decodingFailure }
+        // Load through the Data path and zero it after the rewrite, instead of
+        // materializing the secret as a non-zeroable Swift String. This runs
+        // for every password / API key / OAuth token on an iCloud-Keychain
+        // sync toggle, so it must match the same `Data` + `memset_s` discipline
+        // the rest of this file uses (see `saveOAuthTokens` / `clearSecrets`).
+        guard var data = try loadItemData(account: account) else { return }
+        defer { zero(&data) }
         try deleteItem(account: account)
         let accessible: CFString = enabled
             ? kSecAttrAccessibleWhenUnlocked

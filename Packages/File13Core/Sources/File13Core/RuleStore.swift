@@ -129,6 +129,17 @@ public final class RuleStore {
         }
     }
 
+    /// Apply a rules-schedule value (a `RuleSchedule` rawValue) delivered via
+    /// iCloud sync, after the user approved it in the pending-sync banner.
+    /// Like rule content, the schedule is gated through that banner — it's
+    /// the trigger that turns existing rules from inert into auto-firing, so
+    /// it must never apply silently. (Assigning `schedule` re-marks the key
+    /// dirty, which harmlessly re-propagates the now-accepted value.)
+    public func applySyncedSchedule(from raw: String) {
+        guard let parsed = RuleSchedule(rawValue: raw) else { return }
+        schedule = parsed
+    }
+
     /// Shared encoders, hoisted to statics so each save doesn't allocate a
     /// fresh `JSONEncoder`. Compact for the UserDefaults blob, pretty for
     /// the legacy `rules.json` file. (Main-actor-isolated via the class.)

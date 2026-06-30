@@ -147,11 +147,19 @@ public struct UnsubscribeService: Sendable {
     #endif
 }
 
-/// `URLSessionTaskDelegate` that refuses to follow any redirect whose new URL
-/// isn't HTTPS. Calling the completion handler with `nil` cancels the redirect
-/// without erroring the task — the original 3xx response surfaces to the
-/// caller, which is fine: a sender that responds with a non-HTTPS redirect
-/// just gets a "server error" outcome instead of a silent tracker hit.
+/// `URLSessionTaskDelegate` that only follows a redirect when it stays HTTPS
+/// **and on the same host** as the original (sender-controlled) URL. Calling
+/// the completion handler with `nil` cancels the redirect without erroring
+/// the task — the original 3xx response surfaces to the caller, which is
+/// fine: the sender just gets a "server error" outcome instead of a silent
+/// tracker hit.
+///
+/// The host check is the load-bearing part: without it, a malicious sender's
+/// one-click endpoint could `302` the no-credential POST to an arbitrary
+/// HTTPS host — cloud metadata (`169.254.169.254`), `localhost`, or an
+/// internal-network address — turning the unsubscribe into an SSRF primitive.
+/// Pinning to the original host blocks the cross-host pivot while still
+/// allowing a server to redirect within its own domain.
 private final class HTTPSOnlyRedirectGuard: NSObject, URLSessionTaskDelegate {
     func urlSession(
         _ session: URLSession,
@@ -160,10 +168,13 @@ private final class HTTPSOnlyRedirectGuard: NSObject, URLSessionTaskDelegate {
         newRequest request: URLRequest,
         completionHandler: @escaping (URLRequest?) -> Void
     ) {
-        if request.url?.scheme?.lowercased() == "https" {
-            completionHandler(request)
-        } else {
+        guard request.url?.scheme?.lowercased() == "https",
+              let newHost = request.url?.host?.lowercased(),
+              let originalHost = task.originalRequest?.url?.host?.lowercased(),
+              newHost == originalHost else {
             completionHandler(nil)
+            return
         }
+        completionHandler(request)
     }
 }

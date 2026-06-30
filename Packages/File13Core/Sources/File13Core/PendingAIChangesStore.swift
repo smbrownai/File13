@@ -28,6 +28,13 @@ public enum SyncedSensitiveKeys {
     public static let aiFeatureTuning = "File13.aiFeatureTuning.v1"
     public static let accounts       = "File13.accounts.v1"
     public static let rules          = "File13.rules.v1"
+    // The rules *schedule* is as security-sensitive as rule content: rule
+    // content is gated, but flipping the schedule from `manual` to
+    // `hourly`/`onLaunch` is what turns the user's existing destructive
+    // rules from inert into auto-firing. An iCloud-compromise that can't
+    // inject a new rule can still weaponize the ones already there, so this
+    // routes through the same confirm banner.
+    public static let rulesSchedule  = "File13.rulesSchedule"
 
     // Actions & Safety toggles. An iCloud compromise could otherwise
     // silently weaken the guard rails that make rule execution safe —
@@ -63,7 +70,7 @@ public enum SyncedSensitiveKeys {
     public static let senderCategories = "File13.senderCategories.v1"
 
     public static let all: Set<String> = [
-        aiProvider, aiModel, aiFeatureTuning, accounts, rules,
+        aiProvider, aiModel, aiFeatureTuning, accounts, rules, rulesSchedule,
         undoBufferSeconds, confirmBeforeDelete, confirmBeforeUnsubscribe,
         dryRunMode, softDeleteToTrash, protectVIPsFromRules,
         protectTransactionalFromRules,
@@ -72,7 +79,7 @@ public enum SyncedSensitiveKeys {
 
     public static let aiKeys: Set<String> = [aiProvider, aiModel, aiFeatureTuning]
     public static let accountKeys: Set<String> = [accounts]
-    public static let ruleKeys: Set<String> = [rules]
+    public static let ruleKeys: Set<String> = [rules, rulesSchedule]
 
     public static let safetyKeys: Set<String> = [
         undoBufferSeconds, confirmBeforeDelete, confirmBeforeUnsubscribe,

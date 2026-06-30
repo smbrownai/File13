@@ -1439,6 +1439,17 @@ private func enableSync(_ defaults: UserDefaults) {
         #expect(SyncedSensitiveKeys.all == union)
     }
 
+    @Test func ruleScheduleIsGated() {
+        // Regression guard (audit finding M1): the rules *schedule* is what
+        // turns the user's existing rules from inert into auto-firing, so a
+        // synced schedule flip (manual → hourly/onLaunch) must route through
+        // the pending-confirm banner — never apply last-writer-wins. It has
+        // to be BOTH on the allowlist (so it syncs at all) AND gated.
+        #expect(CloudKVSync.allowlist.contains(SyncedSensitiveKeys.rulesSchedule))
+        #expect(SyncedSensitiveKeys.all.contains(SyncedSensitiveKeys.rulesSchedule))
+        #expect(SyncedSensitiveKeys.ruleKeys.contains(SyncedSensitiveKeys.rulesSchedule))
+    }
+
     @Test func subsetsAreDisjoint() {
         // Each banner reads one subset to filter its pending list. If
         // two subsets shared a key, two banners would race on it.

@@ -359,13 +359,17 @@ struct PendingRuleChangesBanner: View {
             title: "Rules changed on another device",
             summary: "iCloud delivered changes to your rules. Rules can delete, archive, or move mail automatically — review carefully. An attacker with access to your iCloud account could otherwise inject a destructive rule that fires on the next scheduled run.",
             keys: SyncedSensitiveKeys.ruleKeys,
-            labelForKey: { _ in "Rules" },
+            labelForKey: { $0 == SyncedSensitiveKeys.rulesSchedule ? "Run schedule" : "Rules" },
             diffSummary: { Self.summary(for: $0) },
             apply: { item in self.apply(item: item) }
         ))
     }
 
     private static func summary(for item: PendingSyncChangesStore.Pending) -> String {
+        if item.key == SyncedSensitiveKeys.rulesSchedule {
+            let incoming = (item.decodedRemote() as? String) ?? "(default)"
+            return "run schedule → \(incoming)"
+        }
         guard let data = item.decodedRemote() as? Data,
               let incoming = try? JSONDecoder().decode([Rule].self, from: data) else {
             return "rules differ"
@@ -376,9 +380,16 @@ struct PendingRuleChangesBanner: View {
     }
 
     private func apply(item: PendingSyncChangesStore.Pending) {
-        guard item.key == SyncedSensitiveKeys.rules,
-              let data = item.decodedRemote() as? Data else { return }
-        ruleStore.applySyncedRules(from: data)
+        switch item.key {
+        case SyncedSensitiveKeys.rules:
+            guard let data = item.decodedRemote() as? Data else { return }
+            ruleStore.applySyncedRules(from: data)
+        case SyncedSensitiveKeys.rulesSchedule:
+            guard let raw = item.decodedRemote() as? String else { return }
+            ruleStore.applySyncedSchedule(from: raw)
+        default:
+            return
+        }
     }
 }
 
